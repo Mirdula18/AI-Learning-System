@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Continue your learning journey</p>
+        
+        <form id="loginForm" class="auth-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="you@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="Enter your password">
+            </div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            
+            <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                Login
+            </button>
+        </form>
+        
+        <p class="auth-footer">
+            Don't have an account? <a href="/register/">Sign up here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const errorDiv = document.getElementById('errorMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    const formData = {
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+    };
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging in...';
+    
+    try {
+        const response = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user_id', data.user_id);
+            window.location.href = '/courses/';
+        } else {
+            errorDiv.textContent = data.error || 'Login failed';
+            errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+    }
+});
+</script>
+{% endblock %}

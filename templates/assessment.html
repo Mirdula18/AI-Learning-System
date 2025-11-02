@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}Assessment - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="assessment-container">
+    <div class="assessment-header">
+        <div class="progress-info">
+            <span id="questionCounter">Question 1 of 15</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 6.67%"></div>
+            </div>
+        </div>
+        <div class="timer">
+            <span class="timer-icon">⏱️</span>
+            <span id="timer">00:00</span>
+        </div>
+    </div>
+    
+    <div class="question-container" id="questionContainer">
+        <!-- Questions loaded dynamically -->
+    </div>
+    
+    <div class="navigation-buttons">
+        <button id="prevBtn" class="btn btn-secondary" onclick="previousQuestion()" disabled>
+            ← Previous
+        </button>
+        <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">
+            Next →
+        </button>
+        <button id="submitBtn" class="btn btn-success" onclick="submitAssessment()" style="display: none;">
+            Submit Assessment
+        </button>
+    </div>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p id="loadingText">Analyzing your performance...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/quiz.js"></script>
+<script>
+// Check authentication
+if (!localStorage.getItem('token')) {
+    window.location.href = '/login/';
+}
+
+// Get quiz data from sessionStorage
+let quizData = JSON.parse(sessionStorage.getItem('quiz_data'));
+if (!quizData) {
+    window.location.href = '/courses/';
+}
+
+let currentQuestionIndex = 0;
+let userAnswers = {};
+let startTime = Date.now();
+let timerInterval = null;
+
+// Initialize quiz
+function initializeQuiz() {
+    renderQuestion(0);
+    startTimer();
+}
+
+function renderQuestion(index) {
+    const question = quizData.questions[index];
+    currentQuestionIndex = index;
+    
+    // Update progress
+    document.getElementById('questionCounter').textContent = 
+        `Question ${index + 1} of ${quizData.questions.length}`;
+    
+    const progressPercent = ((index + 1) / quizData.questions.length) * 100;
+    document.getElementById('progressFill').style.width = `${progressPercent}%`;
+    
+    // Render question
+    const container = document.getElementById('questionContainer');
+    const selectedAnswer = userAnswers[question.question_id]?.answer || '';
+    
+    container.innerHTML = `
+        <div class="question-card">
+            <div class="question-meta">
+                <span class="difficulty-badge ${question.difficulty}">
+                    ${question.difficulty.toUpperCase()}
+                </span>
+                <span class="topic-label">${question.topic}</span>
+            </div>
+            
+            <h2 class="question-text">${question.question_text}</h2>
+            
+            ${question.code_snippet ? `
+                <div class="code-block">
+                    <pre><code>${escapeHtml(question.code_snippet)}</code></pre>
+                </div>
+            ` : ''}
+            
+            <div class="options-container">
+                ${Object.entries(question.options).map(([key, value]) => `
+                    <label class="option-card ${selectedAnswer === key ? 'selected' : ''}">
+                        <input type="radio" 
+                               name="answer_${question.question_id}" 
+                               value="${key}"
+                               ${selectedAnswer === key ? 'checked' : ''}
+                               onchange="selectAnswer('${question.question_id}', '${key}')">
+                        <div class="option-content">
+                            <span class="option-letter">${key}</span>
+                            <span class="option-text">${value}</span>
+                        </div>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Update navigation buttons
+    document.getElementById('prevBtn').disabled = (index === 0);
+    document.getElementById('nextBtn').style.display = 
+        (index === quizData.questions.length - 1) ? 'none' : 'block';
+    document.getElementById('submitBtn').style.display = 
+        (index === quizData.questions.length - 1) ? 'block' : 'none';
+}
+
+function selectAnswer(questionId, answer) {
+    userAnswers[questionId] = {
+        answer: answer,
+        timeSpent: Date.now()
+    };
+    
+    // Update UI
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.target.closest('.option-card').classList.add('selected');
+    
+    // Auto-advance (optional)
+    // setTimeout(() => {
+    //     if (currentQuestionIndex < quizData.questions.length - 1) {
+    //         nextQuestion();
+    //     }
+    // }, 1000);
+}
+
+function nextQuestion() {
+    if (currentQuestionIndex < quizData.questions.length - 1) {
+        renderQuestion(currentQuestionIndex + 1);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestionIndex > 0) {
+        renderQuestion(currentQuestionIndex - 1);
+    }
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById('timer').textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }, 1000);
+}
+
+async function submitAssessment() {
+    // Check if all questions answered
+    const unanswered = quizData.questions.filter(
+        q => !userAnswers[q.question_id]
+    ).length;
+    
+    if (unanswered > 0) {
+        const confirm = window.confirm(
+            `You have ${unanswered} unanswered questions. Submit anyway?`
+        );
+        if (!confirm) return;
+    }
+    
+    // Stop timer
+    clearInterval(timerInterval);
+    const totalTime = Math.floor((Date.now() - startTime) / 1000);
+    
+    // Show loading overlay
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = 'flex';
+    
+    // Prepare answers in correct format
+    const formattedAnswers = {};
+    Object.entries(userAnswers).forEach(([qId, data]) => {
+        formattedAnswers[qId] = {
+            answer: data.answer,
+            timeSpent: 0
+        };
+    });
+    
+    try {
+        const response = await fetch('/api/assessment/submit/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                assessment_id: quizData.assessment_id,
+                answers: formattedAnswers,
+                total_time_seconds: totalTime
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Redirect to results
+            window.location.href = `/results/${quizData.assessment_id}/`;
+        } else {
+            overlay.style.display = 'none';
+            alert('Failed to submit assessment. Please try again.');
+        }
+    } catch (error) {
+        overlay.style.display = 'none';
+        alert('Network error. Please try again.');
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Initialize
+initializeQuiz();
+</script>
+{% endblock %}

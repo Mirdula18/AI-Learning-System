@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Results - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Loading your results...</p>
+        </div>
+    </div>
+    
+    <!-- Score Hero Section -->
+    <div class="score-hero" id="scoreHero" style="display: none;">
+        <h1>Assessment Complete! 🎉</h1>
+        
+        <div class="score-circle">
+            <svg viewBox="0 0 200 200" class="score-svg">
+                <circle cx="100" cy="100" r="90" class="score-bg"></circle>
+                <circle cx="100" cy="100" r="90" class="score-fill" id="scoreCircle"></circle>
+            </svg>
+            <div class="score-content">
+                <div class="score-number" id="scoreDisplay">0%</div>
+                <div class="score-label" id="scoreFraction">0/15 Correct</div>
+            </div>
+        </div>
+        
+        <div class="skill-level-badge" id="skillBadge">
+            <!-- Populated dynamically -->
+        </div>
+        
+        <p class="personal-message" id="personalMessage"></p>
+    </div>
+    
+    <!-- Performance Breakdown -->
+    <div class="performance-section" id="performanceSection" style="display: none;">
+        <h2>Performance Breakdown</h2>
+        
+        <div class="difficulty-breakdown">
+            <div class="breakdown-item">
+                <div class="breakdown-header">
+                    <span class="difficulty-label">Beginner</span>
+                    <span class="breakdown-score" id="beginnerScore">0/5</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill beginner" id="beginnerProgress"></div>
+                </div>
+            </div>
+            
+            <div class="breakdown-item">
+                <div class="breakdown-header">
+                    <span class="difficulty-label">Intermediate</span>
+                    <span class="breakdown-score" id="intermediateScore">0/7</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill intermediate" id="intermediateProgress"></div>
+                </div>
+            </div>
+            
+            <div class="breakdown-item">
+                <div class="breakdown-header">
+                    <span class="difficulty-label">Advanced</span>
+                    <span class="breakdown-score" id="advancedScore">0/3</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill advanced" id="advancedProgress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strengths & Weaknesses -->
+    <div class="insights-grid" id="insightsGrid" style="display: none;">
+        <div class="insights-card strengths-card">
+            <h3>💪 Your Strengths</h3>
+            <div id="strengthsList"></div>
+        </div>
+        
+        <div class="insights-card weaknesses-card">
+            <h3>📚 Areas to Improve</h3>
+            <div id="weaknessesList"></div>
+        </div>
+    </div>
+    
+    <!-- Next Steps -->
+    <div class="next-steps-section" id="nextStepsSection" style="display: none;">
+        <h2>Your Learning Path Awaits</h2>
+        <p>We've analyzed your performance and created a personalized roadmap just for you.</p>
+        
+        <div class="stats-preview">
+            <div class="stat-item">
+                <div class="stat-number" id="estimatedWeeks">6</div>
+                <div class="stat-label">Weeks to Proficiency</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">9</div>
+                <div class="stat-label">Topics to Master</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">45+</div>
+                <div class="stat-label">Curated Resources</div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary btn-large" onclick="generateRoadmap()">
+            Generate My Personalized Roadmap →
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/results.js"></script>
+<script>
+// Get assessment ID from URL
+const assessmentId = window.location.pathname.split('/').filter(Boolean).pop();
+
+if (!localStorage.getItem('token')) {
+    window.location.href = '/login/';
+}
+
+async function loadResults() {
+    try {
+        const response = await fetch(`/api/assessment/${assessmentId}/results/`, {
+            headers: {
+                'Authorization': `Token ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load results');
+        }
+        
+        const data = await response.json();
+        renderResults(data);
+        
+    } catch (error) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert('Failed to load results. Please try again.');
+    }
+}
+
+function renderResults(data) {
+    const profile = data.learner_profile;
+    const eval = data.evaluation_results;
+    
+    // Hide loading overlay
+    document.getElementById('loadingOverlay').style.display = 'none';
+    
+    // Show all sections
+    document.getElementById('scoreHero').style.display = 'block';
+    document.getElementById('performanceSection').style.display = 'block';
+    document.getElementById('insightsGrid').style.display = 'grid';
+    document.getElementById('nextStepsSection').style.display = 'block';
+    
+    // Animate score
+    animateScore(eval.overall_score, eval.total_correct, eval.total_questions);
+    
+    // Skill level badge
+    const skillBadge = document.getElementById('skillBadge');
+    const skillIcon = {
+        'absolute_beginner': '🌱',
+        'beginner': '🎓',
+        'intermediate': '⚡',
+        'advanced': '🚀'
+    };
+    
+    skillBadge.innerHTML = `
+        <span class="level-icon">${skillIcon[profile.skill_level] || '🎯'}</span>
+        <span class="level-text">${profile.skill_level.replace('_', ' ').toUpperCase()}</span>
+    `;
+    skillBadge.className = `skill-level-badge ${profile.skill_level}`;
+    
+    // Personal message
+    document.getElementById('personalMessage').textContent = profile.personalized_message;
+    
+    // Difficulty breakdown
+    renderDifficultyBreakdown(eval.score_by_difficulty);
+    
+    // Strengths
+    document.getElementById('strengthsList').innerHTML = profile.strengths
+        .map(s => `
+            <div class="strength-item">
+                <div class="strength-header">
+                    <span class="strength-topic">${s.topic}</span>
+                    <span class="strength-percent">${s.proficiency_percent}%</span>
+                </div>
+                <div class="progress-bar small">
+                    <div class="progress-fill" style="width: ${s.proficiency_percent}%"></div>
+                </div>
+                <p class="strength-note">${s.note}</p>
+            </div>
+        `).join('');
+    
+    // Weaknesses
+    document.getElementById('weaknessesList').innerHTML = profile.weaknesses
+        .map(w => `
+            <div class="weakness-item priority-${w.priority}">
+                <div class="weakness-header">
+                    <span class="weakness-topic">${w.topic}</span>
+                    <span class="priority-badge">${w.priority} priority</span>
+                </div>
+                <div class="progress-bar small">
+                    <div class="progress-fill warning" style="width: ${w.proficiency_percent}%"></div>
+                </div>
+                <p class="weakness-note">${w.note}</p>
+            </div>
+        `).join('');
+    
+    // Stats preview
+    document.getElementById('estimatedWeeks').textContent = profile.estimated_weeks_to_proficiency;
+}
+
+function animateScore(targetScore, correct, total) {
+    let current = 0;
+    const increment = targetScore / 50;
+    const interval = setInterval(() => {
+        current += increment;
+        if (current >= targetScore) {
+            current = targetScore;
+            clearInterval(interval);
+        }
+        
+        document.getElementById('scoreDisplay').textContent = `${Math.round(current)}%`;
+        
+        // Animate circle
+        const circumference = 2 * Math.PI * 90;
+        const offset = circumference - (current / 100) * circumference;
+        document.getElementById('scoreCircle').style.strokeDashoffset = offset;
+    }, 20);
+    
+    document.getElementById('scoreFraction').textContent = `${correct}/${total} Correct`;
+}
+
+function renderDifficultyBreakdown(breakdown) {
+    ['beginner', 'intermediate', 'advanced'].forEach(level => {
+        const data = breakdown[level];
+        const percent = (data.correct / data.total) * 100;
+        
+        document.getElementById(`${level}Score`).textContent = 
+            `${data.correct}/${data.total}`;
+        document.getElementById(`${level}Progress`).style.width = `${percent}%`;
+    });
+}
+
+function generateRoadmap() {
+    alert('Roadmap generation feature coming soon!');
+    // Will be implemented in next phase
+}
+
+// Load results when page loads
+loadResults();
+</script>
+{% endblock %}

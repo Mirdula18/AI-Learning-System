@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Setup Profile - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-header">
+            <h2>Tell Us About Your Learning Goals</h2>
+            <p>Help us personalize your experience</p>
+        </div>
+        
+        <div class="progress-indicator">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 33%"></div>
+            </div>
+            <span id="stepIndicator">Step 1 of 3</span>
+        </div>
+        
+        <form id="profileForm">
+            <!-- Step 1: Learning Goal -->
+            <div class="step active" data-step="1">
+                <h3>What's your main learning goal?</h3>
+                <div class="goal-options">
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="career_switch" required>
+                        <div class="goal-content">
+                            <span class="goal-icon">💼</span>
+                            <span class="goal-text">Career Switch to Tech</span>
+                        </div>
+                    </label>
+                    
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="upskill">
+                        <div class="goal-content">
+                            <span class="goal-icon">📈</span>
+                            <span class="goal-text">Upskill for Current Job</span>
+                        </div>
+                    </label>
+                    
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="personal_project">
+                        <div class="goal-content">
+                            <span class="goal-icon">🚀</span>
+                            <span class="goal-text">Build Personal Projects</span>
+                        </div>
+                    </label>
+                    
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="academic">
+                        <div class="goal-content">
+                            <span class="goal-icon">🎓</span>
+                            <span class="goal-text">Supplement Academic Studies</span>
+                        </div>
+                    </label>
+                    
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="freelance">
+                        <div class="goal-content">
+                            <span class="goal-icon">💻</span>
+                            <span class="goal-text">Start Freelancing</span>
+                        </div>
+                    </label>
+                    
+                    <label class="goal-card">
+                        <input type="radio" name="learning_goal" value="explore">
+                        <div class="goal-content">
+                            <span class="goal-icon">🔍</span>
+                            <span class="goal-text">Just Exploring</span>
+                        </div>
+                    </label>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="nextStep()">Next</button>
+            </div>
+            
+            <!-- Step 2: Time Availability -->
+            <div class="step" data-step="2">
+                <h3>How much time can you dedicate per week?</h3>
+                <div class="time-slider-container">
+                    <input type="range" name="weekly_hours" min="2" max="20" value="6" 
+                           id="timeSlider" oninput="updateTimeDisplay(this.value)">
+                    <div class="time-display">
+                        <span id="hoursDisplay">6</span> hours/week
+                    </div>
+                </div>
+                <p class="helper-text">Recommended: 6-8 hours for balanced learning</p>
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep()">Next</button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Preferred Schedule -->
+            <div class="step" data-step="3">
+                <h3>When do you prefer to learn?</h3>
+                <div class="schedule-options">
+                    <label class="schedule-card">
+                        <input type="radio" name="preferred_time" value="early_morning" required>
+                        <div class="schedule-content">
+                            <span class="schedule-icon">🌅</span>
+                            <span class="schedule-text">Early Morning (6-9 AM)</span>
+                        </div>
+                    </label>
+                    
+                    <label class="schedule-card">
+                        <input type="radio" name="preferred_time" value="evening">
+                        <div class="schedule-content">
+                            <span class="schedule-icon">🌆</span>
+                            <span class="schedule-text">Evening (6-10 PM)</span>
+                        </div>
+                    </label>
+                    
+                    <label class="schedule-card">
+                        <input type="radio" name="preferred_time" value="weekend">
+                        <div class="schedule-content">
+                            <span class="schedule-icon">🏖️</span>
+                            <span class="schedule-text">Weekends</span>
+                        </div>
+                    </label>
+                    
+                    <label class="schedule-card">
+                        <input type="radio" name="preferred_time" value="flexible">
+                        <div class="schedule-content">
+                            <span class="schedule-icon">🔄</span>
+                            <span class="schedule-text">Flexible</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Complete Setup</button>
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 1;
+
+function nextStep() {
+    const currentStepEl = document.querySelector(`.step[data-step="${currentStep}"]`);
+    const inputs = currentStepEl.querySelectorAll('input[required]');
+    
+    // Validate current step
+    let valid = true;
+    inputs.forEach(input => {
+        if (input.type === 'radio') {
+            const radioGroup = currentStepEl.querySelectorAll(`input[name="${input.name}"]`);
+            const checked = Array.from(radioGroup).some(r => r.checked);
+            if (!checked) valid = false;
+        } else if (!input.value) {
+            valid = false;
+        }
+    });
+    
+    if (!valid) {
+        alert('Please complete this step before continuing');
+        return;
+    }
+    
+    // Move to next step
+    currentStepEl.classList.remove('active');
+    currentStep++;
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+    updateProgress();
+}
+
+function prevStep() {
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+    currentStep--;
+    document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+    updateProgress();
+}
+
+function updateProgress() {
+    const progress = (currentStep / 3) * 100;
+    document.getElementById('progressFill').style.width = `${progress}%`;
+    document.getElementById('stepIndicator').textContent = `Step ${currentStep} of 3`;
+}
+
+function updateTimeDisplay(hours) {
+    document.getElementById('hoursDisplay').textContent = hours;
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        learning_goal: document.querySelector('input[name="learning_goal"]:checked').value,
+        weekly_hours: parseInt(document.querySelector('input[name="weekly_hours"]').value),
+        preferred_time: document.querySelector('input[name="preferred_time"]:checked').value
+    };
+    
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+    
+    try {
+        const response = await fetch('/api/profile/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            window.location.href = '/courses/';
+        } else {
+            const data = await response.json();
+            document.getElementById('errorMessage').textContent = data.error || 'Failed to save profile';
+            document.getElementById('errorMessage').style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Complete Setup';
+        }
+    } catch (error) {
+        document.getElementById('errorMessage').textContent = 'Network error. Please try again.';
+        document.getElementById('errorMessage').style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Complete Setup';
+    }
+});
+
+// Check if user is logged in
+if (!localStorage.getItem('token')) {
+    window.location.href = '/login/';
+}
+</script>
+{% endblock %}

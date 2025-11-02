@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Choose Your Course - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="courses-container">
+    <div class="courses-header">
+        <h2>What Do You Want to Learn?</h2>
+        <p>Type the course or topic you want to master</p>
+    </div>
+    
+    <div class="custom-course-section">
+        <div class="custom-course-card">
+            <h3>✨ Create Custom Course</h3>
+            <p>Enter any course or topic you'd like to learn</p>
+            
+            <div class="custom-input-group">
+                <input 
+                    type="text" 
+                    id="customCourse" 
+                    placeholder="e.g., Web Development, Machine Learning, Data Analysis, React, Django, etc..."
+                    class="custom-course-input"
+                >
+                <button class="btn btn-primary" onclick="startCustomCourse()">Start Learning</button>
+            </div>
+            
+            <div id="suggestions" class="suggestions-list">
+                <p class="suggestions-title">Popular Courses:</p>
+                <div class="suggestion-tags">
+                    <span class="suggestion-tag" onclick="setCustomCourse('Web Development')">Web Development</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Machine Learning')">Machine Learning</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Data Science')">Data Science</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('React')">React</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Django')">Django</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Python')">Python</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('JavaScript')">JavaScript</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('SQL')">SQL</span>
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="transitionOverlay" class="transition-overlay" style="display: none;">
+    <div class="transition-content">
+        <div class="spinner"></div>
+        <p id="transitionMessage">Preparing your personalized assessment...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Check authentication
+if (!localStorage.getItem('token')) {
+    window.location.href = '/login/';
+}
+
+function setCustomCourse(courseName) {
+    document.getElementById('customCourse').value = courseName;
+}
+
+async function startCustomCourse() {
+    const courseName = document.getElementById('customCourse').value.trim();
+    const errorDiv = document.getElementById('errorMessage');
+    
+    // Validate input
+    if (!courseName || courseName.length < 2) {
+        errorDiv.textContent = 'Please enter a valid course name (at least 2 characters)';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    if (courseName.length > 100) {
+        errorDiv.textContent = 'Course name too long (max 100 characters)';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Hide error and show loading
+    errorDiv.style.display = 'none';
+    const overlay = document.getElementById('transitionOverlay');
+    overlay.style.display = 'flex';
+    
+    try {
+        const response = await fetch('/api/assessment/start-custom/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ 
+                course_name: courseName
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to start assessment');
+        }
+        
+        const data = await response.json();
+        
+        // Store quiz data in sessionStorage
+        sessionStorage.setItem('quiz_data', JSON.stringify(data.quiz));
+        
+        // Redirect to assessment
+        setTimeout(() => {
+            window.location.href = '/assessment/';
+        }, 2000);
+        
+    } catch (error) {
+        overlay.style.display = 'none';
+        errorDiv.textContent = 'Failed to start assessment. Please try again.';
+        errorDiv.style.display = 'block';
+        console.error('Error:', error);
+    }
+}
+
+// Allow Enter key to start
+document.getElementById('customCourse').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        startCustomCourse();
+    }
+});
+</script>
+{% endblock %}

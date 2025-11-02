@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">Learn Smarter, Not Harder</h1>
+            <p class="hero-subtitle">
+                AI-powered personalized learning that adapts to your skill level. 
+                Start your journey with Python programming - completely free.
+            </p>
+            <div class="hero-buttons">
+                <a href="/register/" class="btn btn-primary">Get Started Free</a>
+                <a href="/login/" class="btn btn-secondary">Login</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <div class="floating-card">
+                <p>✨ Personalized Assessment</p>
+            </div>
+            <div class="floating-card">
+                <p>🎯 Custom Roadmap</p>
+            </div>
+            <div class="floating-card">
+                <p>📚 Curated Resources</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="features-section">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">1️⃣</div>
+                <h3>Take Assessment</h3>
+                <p>AI-generated quiz tailored to the course you choose. We accurately assess your current skill level.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">2️⃣</div>
+                <h3>Get Personalized Roadmap</h3>
+                <p>Receive a custom learning path based on your strengths and weaknesses. Focus on what matters.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">3️⃣</div>
+                <h3>Learn & Adapt</h3>
+                <p>Access curated resources from YouTube and blogs. The system adapts as you progress.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Ready to Transform Your Learning?</h2>
+        <p>Join thousands of learners who are mastering technical skills with personalized AI guidance.</p>
+        <a href="/register/" class="btn btn-primary btn-large">Start Learning Now - It's Free</a>
+    </div>
+</section>
+{% endblock %}
