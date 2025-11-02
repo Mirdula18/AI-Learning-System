@@ -89,6 +89,8 @@ async function startCustomCourse() {
     overlay.style.display = 'flex';
     
     try {
+        console.log('Starting assessment for:', courseName);
+        
         const response = await fetch('/api/assessment/start-custom/', {
             method: 'POST',
             headers: {
@@ -100,25 +102,35 @@ async function startCustomCourse() {
             })
         });
         
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (!response.ok) {
             throw new Error(data.error || 'Failed to start assessment');
         }
         
-        // Store quiz data in sessionStorage
+        if (!data.quiz || !data.quiz.questions) {
+            throw new Error('No quiz data in response');
+        }
+        
+        // Store data
+        console.log('Storing quiz data...');
         sessionStorage.setItem('quiz_data', JSON.stringify(data.quiz));
+        sessionStorage.setItem('assessment_id', data.quiz.assessment_id);
+        
+        console.log('Quiz data stored, redirecting...');
         
         // Redirect to assessment page
         setTimeout(() => {
             window.location.href = '/assessment/';
-        }, 1500);
+        }, 1000);
         
     } catch (error) {
+        console.error('Error caught:', error);
         overlay.style.display = 'none';
-        errorDiv.textContent = `❌ ${error.message || 'Failed to generate assessment. Please try again.'}`;
+        errorDiv.textContent = `❌ ${error.message}`;
         errorDiv.style.display = 'block';
-        console.error('Error:', error);
     }
 }
 

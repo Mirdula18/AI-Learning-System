@@ -1,201 +1,195 @@
 {% extends 'base.html' %}
 
-{% block title %}Assessment - AdaptLearn{% endblock %}
+{% block title %}Take Assessment - AdaptLearn{% endblock %}
 
 {% block content %}
 <div class="assessment-container">
     <div class="assessment-header">
         <div class="progress-info">
-            <span id="questionCounter">Question 1 of 15</span>
+            <p id="questionNumber">Question 1 of 10</p>
             <div class="progress-bar">
-                <div class="progress-fill" id="progressFill" style="width: 6.67%"></div>
+                <div class="progress-fill" id="progressBar" style="width: 10%"></div>
             </div>
         </div>
         <div class="timer">
             <span class="timer-icon">⏱️</span>
-            <span id="timer">00:00</span>
+            <span id="timerDisplay">00:00</span>
         </div>
     </div>
-    
-    <div class="question-container" id="questionContainer">
-        <!-- Questions loaded dynamically -->
-    </div>
-    
-    <div class="navigation-buttons">
-        <button id="prevBtn" class="btn btn-secondary" onclick="previousQuestion()" disabled>
-            ← Previous
-        </button>
-        <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">
-            Next →
-        </button>
-        <button id="submitBtn" class="btn btn-success" onclick="submitAssessment()" style="display: none;">
-            Submit Assessment
-        </button>
+
+    <div class="question-container">
+        <div class="question-card" id="questionCard"></div>
+        
+        <div class="navigation-buttons">
+            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" style="display: none;">← Previous</button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next →</button>
+            <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display: none;">Submit Assessment</button>
+        </div>
     </div>
 </div>
 
-<div id="loadingOverlay" class="loading-overlay" style="display: none;">
-    <div class="loading-content">
-        <div class="spinner"></div>
-        <p id="loadingText">Analyzing your performance...</p>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/quiz.js"></script>
 <script>
 // Check authentication
 if (!localStorage.getItem('token')) {
     window.location.href = '/login/';
 }
 
-// Get quiz data from sessionStorage
-let quizData = JSON.parse(sessionStorage.getItem('quiz_data'));
-if (!quizData) {
-    window.location.href = '/courses/';
+let quizManager;
+let assessmentId;
+
+async function initializeAssessment() {
+    try {
+        console.log('Initializing assessment...');
+        
+        const quizDataStr = sessionStorage.getItem('quiz_data');
+        const assessmentIdStr = sessionStorage.getItem('assessment_id');
+        
+        console.log('Quiz data from storage:', quizDataStr ? 'exists' : 'missing');
+        console.log('Assessment ID from storage:', assessmentIdStr);
+        
+        if (!quizDataStr || !assessmentIdStr) {
+            console.error('Missing quiz_data or assessment_id');
+            document.body.innerHTML = `
+                <div style="padding: 40px; text-align: center;">
+                    <h2>Error: Assessment data not found</h2>
+                    <p>Please go back and try again.</p>
+                    <button onclick="window.location.href='/courses/'">Back to Courses</button>
+                </div>
+            `;
+            return;
+        }
+
+        const quizData = JSON.parse(quizDataStr);
+        assessmentId = parseInt(assessmentIdStr);
+        
+        console.log('Quiz data parsed:', quizData);
+        console.log('Assessment ID:', assessmentId);
+        console.log('Number of questions:', quizData.questions?.length);
+        
+        if (!quizData.questions || quizData.questions.length === 0) {
+            throw new Error('No questions in quiz data');
+        }
+
+        quizManager = new QuizManager(quizData);
+        console.log('Quiz manager created');
+        
+        quizManager.startTimer(updateTimer);
+        console.log('Timer started');
+        
+        displayQuestion();
+        console.log('Question displayed');
+        
+        updateNavigation();
+        console.log('Navigation updated');
+        
+    } catch (error) {
+        console.error('Assessment initialization error:', error);
+        document.body.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: red;">
+                <h2>Error: ${error.message}</h2>
+                <p>Please check the browser console for more details.</p>
+                <button onclick="window.location.href='/courses/'">Back to Courses</button>
+            </div>
+        `;
+    }
 }
 
-let currentQuestionIndex = 0;
-let userAnswers = {};
-let startTime = Date.now();
-let timerInterval = null;
-
-// Initialize quiz
-function initializeQuiz() {
-    renderQuestion(0);
-    startTimer();
-}
-
-function renderQuestion(index) {
-    const question = quizData.questions[index];
-    currentQuestionIndex = index;
-    
-    // Update progress
-    document.getElementById('questionCounter').textContent = 
-        `Question ${index + 1} of ${quizData.questions.length}`;
-    
-    const progressPercent = ((index + 1) / quizData.questions.length) * 100;
-    document.getElementById('progressFill').style.width = `${progressPercent}%`;
-    
-    // Render question
-    const container = document.getElementById('questionContainer');
-    const selectedAnswer = userAnswers[question.question_id]?.answer || '';
+function displayQuestion() {
+    const question = quizManager.getCurrentQuestion();
+    const container = document.getElementById('questionCard');
     
     container.innerHTML = `
-        <div class="question-card">
-            <div class="question-meta">
-                <span class="difficulty-badge ${question.difficulty}">
-                    ${question.difficulty.toUpperCase()}
-                </span>
-                <span class="topic-label">${question.topic}</span>
-            </div>
-            
-            <h2 class="question-text">${question.question_text}</h2>
-            
-            ${question.code_snippet ? `
-                <div class="code-block">
-                    <pre><code>${escapeHtml(question.code_snippet)}</code></pre>
-                </div>
-            ` : ''}
-            
-            <div class="options-container">
-                ${Object.entries(question.options).map(([key, value]) => `
-                    <label class="option-card ${selectedAnswer === key ? 'selected' : ''}">
-                        <input type="radio" 
-                               name="answer_${question.question_id}" 
-                               value="${key}"
-                               ${selectedAnswer === key ? 'checked' : ''}
-                               onchange="selectAnswer('${question.question_id}', '${key}')">
-                        <div class="option-content">
-                            <span class="option-letter">${key}</span>
-                            <span class="option-text">${value}</span>
-                        </div>
-                    </label>
-                `).join('')}
-            </div>
+        <div class="question-meta">
+            <span class="difficulty-badge ${question.difficulty}">${question.difficulty.toUpperCase()}</span>
+            <span class="topic-label">${question.topic}</span>
+        </div>
+        
+        <div class="question-text">${escapeHtml(question.question_text)}</div>
+        
+        ${question.code_snippet ? `<div class="code-block"><code>${escapeHtml(question.code_snippet)}</code></div>` : ''}
+        
+        <div class="options-container">
+            ${Object.entries(question.options)
+                .map(([letter, text]) => createSingleOption(letter, text, question.question_id))
+                .join('')}
         </div>
     `;
     
-    // Update navigation buttons
-    document.getElementById('prevBtn').disabled = (index === 0);
-    document.getElementById('nextBtn').style.display = 
-        (index === quizData.questions.length - 1) ? 'none' : 'block';
-    document.getElementById('submitBtn').style.display = 
-        (index === quizData.questions.length - 1) ? 'block' : 'none';
+    document.getElementById('questionNumber').textContent = 
+        `Question ${quizManager.currentIndex + 1} of ${quizManager.getTotalQuestions()}`;
+    document.getElementById('progressBar').style.width = quizManager.getProgress() + '%';
 }
 
-function selectAnswer(questionId, answer) {
-    userAnswers[questionId] = {
-        answer: answer,
-        timeSpent: Date.now()
-    };
+function createSingleOption(letter, text, questionId) {
+    const userAnswer = quizManager.getAnswer(questionId);
+    const isSelected = userAnswer === letter;
     
-    // Update UI
-    document.querySelectorAll('.option-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    event.target.closest('.option-card').classList.add('selected');
-    
-    // Auto-advance (optional)
-    // setTimeout(() => {
-    //     if (currentQuestionIndex < quizData.questions.length - 1) {
-    //         nextQuestion();
-    //     }
-    // }, 1000);
+    return `
+        <label class="option-card ${isSelected ? 'selected' : ''}">
+            <input type="radio" name="option_${questionId}" value="${letter}" 
+                   onchange="selectOption('${questionId}', '${letter}')" 
+                   ${isSelected ? 'checked' : ''}>
+            <span class="option-letter">${letter}</span>
+            <span class="option-content">
+                <span class="option-text">${escapeHtml(text)}</span>
+            </span>
+        </label>
+    `;
+}
+
+function selectOption(questionId, answer) {
+    quizManager.selectAnswer(questionId, answer);
+    displayQuestion();
 }
 
 function nextQuestion() {
-    if (currentQuestionIndex < quizData.questions.length - 1) {
-        renderQuestion(currentQuestionIndex + 1);
+    if (quizManager.currentIndex < quizManager.getTotalQuestions() - 1) {
+        quizManager.currentIndex++;
+        displayQuestion();
+        updateNavigation();
     }
 }
 
 function previousQuestion() {
-    if (currentQuestionIndex > 0) {
-        renderQuestion(currentQuestionIndex - 1);
+    if (quizManager.currentIndex > 0) {
+        quizManager.currentIndex--;
+        displayQuestion();
+        updateNavigation();
     }
 }
 
-function startTimer() {
-    timerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(elapsed / 60);
-        const seconds = elapsed % 60;
-        document.getElementById('timer').textContent = 
-            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }, 1000);
+function updateNavigation() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    prevBtn.style.display = quizManager.currentIndex > 0 ? 'block' : 'none';
+    
+    if (quizManager.currentIndex === quizManager.getTotalQuestions() - 1) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    } else {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    }
 }
 
-async function submitAssessment() {
-    // Check if all questions answered
-    const unanswered = quizData.questions.filter(
-        q => !userAnswers[q.question_id]
-    ).length;
-    
-    if (unanswered > 0) {
-        const confirm = window.confirm(
-            `You have ${unanswered} unanswered questions. Submit anyway?`
-        );
-        if (!confirm) return;
+function updateTimer(timeString) {
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) {
+        timerDisplay.textContent = timeString;
     }
+}
+
+async function submitQuiz() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
     
-    // Stop timer
-    clearInterval(timerInterval);
-    const totalTime = Math.floor((Date.now() - startTime) / 1000);
-    
-    // Show loading overlay
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
-    
-    // Prepare answers in correct format
-    const formattedAnswers = {};
-    Object.entries(userAnswers).forEach(([qId, data]) => {
-        formattedAnswers[qId] = {
-            answer: data.answer,
-            timeSpent: 0
-        };
-    });
+    quizManager.stopTimer();
     
     try {
         const response = await fetch('/api/assessment/submit/', {
@@ -205,39 +199,35 @@ async function submitAssessment() {
                 'Authorization': `Token ${localStorage.getItem('token')}`
             },
             body: JSON.stringify({
-                assessment_id: quizData.assessment_id,
-                answers: formattedAnswers,
-                total_time_seconds: totalTime
+                assessment_id: parseInt(assessmentId),
+                user_answers: quizManager.getFormattedAnswers(),
+                time_taken: quizManager.getTotalTime()
             })
         });
         
         const data = await response.json();
         
-        if (response.ok) {
-            // Redirect to results
-            window.location.href = `/results/${quizData.assessment_id}/`;
-        } else {
-            overlay.style.display = 'none';
-            alert('Failed to submit assessment. Please try again.');
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to submit assessment');
         }
+        
+        console.log('Assessment Response:', data);
+        sessionStorage.setItem('results_data', JSON.stringify(data));
+        sessionStorage.setItem('assessment_id', assessmentId);
+        
+        setTimeout(() => {
+            window.location.href = '/results/';
+        }, 1000);
+        
     } catch (error) {
-        overlay.style.display = 'none';
-        alert('Network error. Please try again.');
+        alert('Error submitting assessment: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Assessment';
+        console.error('Submit error:', error);
     }
 }
 
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// Initialize
-initializeQuiz();
+// Initialize on page load
+window.addEventListener('load', initializeAssessment);
 </script>
 {% endblock %}

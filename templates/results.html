@@ -1,255 +1,594 @@
 {% extends 'base.html' %}
 
-{% block title %}Results - AdaptLearn{% endblock %}
+{% block title %}Your Results - AdaptLearn{% endblock %}
 
 {% block content %}
 <div class="results-container">
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <p>Loading your results...</p>
-        </div>
-    </div>
     
-    <!-- Score Hero Section -->
-    <div class="score-hero" id="scoreHero" style="display: none;">
-        <h1>Assessment Complete! 🎉</h1>
+    <!-- Score Section -->
+    <div id="scoreHero" class="score-hero">
+        <h1>Your Assessment Results</h1>
         
         <div class="score-circle">
-            <svg viewBox="0 0 200 200" class="score-svg">
+            <svg class="score-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
                 <circle cx="100" cy="100" r="90" class="score-bg"></circle>
-                <circle cx="100" cy="100" r="90" class="score-fill" id="scoreCircle"></circle>
+                <circle id="scoreCircle" cx="100" cy="100" r="90" class="score-fill"></circle>
             </svg>
             <div class="score-content">
-                <div class="score-number" id="scoreDisplay">0%</div>
-                <div class="score-label" id="scoreFraction">0/15 Correct</div>
+                <span class="score-number" id="scoreDisplay">0%</span>
+                <span class="score-label" id="scoreFraction">0/10 Correct</span>
             </div>
         </div>
         
-        <div class="skill-level-badge" id="skillBadge">
-            <!-- Populated dynamically -->
-        </div>
+        <div id="skillBadge" class="skill-level-badge"></div>
         
         <p class="personal-message" id="personalMessage"></p>
     </div>
     
-    <!-- Performance Breakdown -->
-    <div class="performance-section" id="performanceSection" style="display: none;">
-        <h2>Performance Breakdown</h2>
+    <!-- Performance Section -->
+    <div id="performanceSection" class="performance-section" style="display: none;">
+        <h2>📊 Performance Breakdown</h2>
         
         <div class="difficulty-breakdown">
             <div class="breakdown-item">
                 <div class="breakdown-header">
-                    <span class="difficulty-label">Beginner</span>
-                    <span class="breakdown-score" id="beginnerScore">0/5</span>
+                    <span class="difficulty-label">Beginner Questions</span>
+                    <span class="breakdown-score" id="beginnerScore">0/0</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill beginner" id="beginnerProgress"></div>
+                    <div class="progress-fill beginner" id="beginnerProgress" style="width: 0%"></div>
                 </div>
             </div>
             
             <div class="breakdown-item">
                 <div class="breakdown-header">
-                    <span class="difficulty-label">Intermediate</span>
-                    <span class="breakdown-score" id="intermediateScore">0/7</span>
+                    <span class="difficulty-label">Intermediate Questions</span>
+                    <span class="breakdown-score" id="intermediateScore">0/0</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill intermediate" id="intermediateProgress"></div>
+                    <div class="progress-fill intermediate" id="intermediateProgress" style="width: 0%"></div>
                 </div>
             </div>
             
             <div class="breakdown-item">
                 <div class="breakdown-header">
-                    <span class="difficulty-label">Advanced</span>
-                    <span class="breakdown-score" id="advancedScore">0/3</span>
+                    <span class="difficulty-label">Advanced Questions</span>
+                    <span class="breakdown-score" id="advancedScore">0/0</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill advanced" id="advancedProgress"></div>
+                    <div class="progress-fill advanced" id="advancedProgress" style="width: 0%"></div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Strengths & Weaknesses -->
-    <div class="insights-grid" id="insightsGrid" style="display: none;">
-        <div class="insights-card strengths-card">
+    <!-- Insights Section -->
+    <div id="insightsGrid" class="insights-grid" style="display: none;">
+        <div class="insights-card">
             <h3>💪 Your Strengths</h3>
             <div id="strengthsList"></div>
         </div>
         
-        <div class="insights-card weaknesses-card">
-            <h3>📚 Areas to Improve</h3>
+        <div class="insights-card">
+            <h3>🎯 Areas to Improve</h3>
             <div id="weaknessesList"></div>
         </div>
     </div>
     
-    <!-- Next Steps -->
-    <div class="next-steps-section" id="nextStepsSection" style="display: none;">
-        <h2>Your Learning Path Awaits</h2>
-        <p>We've analyzed your performance and created a personalized roadmap just for you.</p>
+    <!-- Next Steps Section -->
+    <div id="nextStepsSection" class="next-steps-section" style="display: none;">
+        <h2>🚀 Your Learning Path</h2>
         
         <div class="stats-preview">
             <div class="stat-item">
-                <div class="stat-number" id="estimatedWeeks">6</div>
-                <div class="stat-label">Weeks to Proficiency</div>
+                <span class="stat-number" id="estimatedWeeks">8</span>
+                <span class="stat-label">Weeks to Proficiency</span>
             </div>
             <div class="stat-item">
-                <div class="stat-number">9</div>
-                <div class="stat-label">Topics to Master</div>
+                <span class="stat-number" id="confidenceScore">75</span>
+                <span class="stat-label">Confidence Level</span>
             </div>
             <div class="stat-item">
-                <div class="stat-number">45+</div>
-                <div class="stat-label">Curated Resources</div>
+                <span class="stat-number">10</span>
+                <span class="stat-label">Questions Attempted</span>
             </div>
         </div>
         
-        <button class="btn btn-primary btn-large" onclick="generateRoadmap()">
-            Generate My Personalized Roadmap →
-        </button>
+        <div style="margin-top: 40px; text-align: center;">
+            <button class="btn btn-primary btn-large" onclick="generateRoadmap()">
+                🗺️ Generate Your Learning Roadmap
+            </button>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Roadmap Modal -->
+<div id="roadmapModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto;">
+    <div style="background: white; margin: 20px auto; padding: 40px; border-radius: 8px; max-width: 900px; margin-top: 50px;">
+        <button onclick="closeRoadmap()" style="float: right; background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+        <div id="roadmapContent"></div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/results.js"></script>
 <script>
-// Get assessment ID from URL
-const assessmentId = window.location.pathname.split('/').filter(Boolean).pop();
-
+// Check authentication
 if (!localStorage.getItem('token')) {
     window.location.href = '/login/';
 }
 
-async function loadResults() {
+async function initializeResults() {
     try {
-        const response = await fetch(`/api/assessment/${assessmentId}/results/`, {
-            headers: {
-                'Authorization': `Token ${localStorage.getItem('token')}`
-            }
-        });
+        const resultsData = JSON.parse(sessionStorage.getItem('results_data') || '{}');
         
-        if (!response.ok) {
-            throw new Error('Failed to load results');
+        console.log('Results Data:', resultsData);
+        
+        if (!resultsData || !resultsData.evaluation_results) {
+            console.error('No results data found');
+            document.getElementById('scoreHero').innerHTML = 
+                '<p style="color: red;">No results data found. Please go back and take the assessment.</p>';
+            return;
         }
         
-        const data = await response.json();
-        renderResults(data);
+        const manager = new ResultsManager(resultsData);
+        await manager.render();
         
     } catch (error) {
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert('Failed to load results. Please try again.');
+        console.error('Results initialization error:', error);
     }
 }
 
-function renderResults(data) {
-    const profile = data.learner_profile;
-    const eval = data.evaluation_results;
+async function generateRoadmap() {
+    const assessmentId = sessionStorage.getItem('assessment_id');
     
-    // Hide loading overlay
-    document.getElementById('loadingOverlay').style.display = 'none';
+    if (!assessmentId) {
+        alert('Assessment ID not found');
+        return;
+    }
     
-    // Show all sections
-    document.getElementById('scoreHero').style.display = 'block';
-    document.getElementById('performanceSection').style.display = 'block';
-    document.getElementById('insightsGrid').style.display = 'grid';
-    document.getElementById('nextStepsSection').style.display = 'block';
+    const modal = document.getElementById('roadmapModal');
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
     
-    // Animate score
-    animateScore(eval.overall_score, eval.total_correct, eval.total_questions);
+    const content = document.getElementById('roadmapContent');
+    content.innerHTML = '<div class="spinner"></div><p>Generating your personalized roadmap...</p>';
     
-    // Skill level badge
-    const skillBadge = document.getElementById('skillBadge');
-    const skillIcon = {
-        'absolute_beginner': '🌱',
-        'beginner': '🎓',
-        'intermediate': '⚡',
-        'advanced': '🚀'
-    };
-    
-    skillBadge.innerHTML = `
-        <span class="level-icon">${skillIcon[profile.skill_level] || '🎯'}</span>
-        <span class="level-text">${profile.skill_level.replace('_', ' ').toUpperCase()}</span>
-    `;
-    skillBadge.className = `skill-level-badge ${profile.skill_level}`;
-    
-    // Personal message
-    document.getElementById('personalMessage').textContent = profile.personalized_message;
-    
-    // Difficulty breakdown
-    renderDifficultyBreakdown(eval.score_by_difficulty);
-    
-    // Strengths
-    document.getElementById('strengthsList').innerHTML = profile.strengths
-        .map(s => `
-            <div class="strength-item">
-                <div class="strength-header">
-                    <span class="strength-topic">${s.topic}</span>
-                    <span class="strength-percent">${s.proficiency_percent}%</span>
-                </div>
-                <div class="progress-bar small">
-                    <div class="progress-fill" style="width: ${s.proficiency_percent}%"></div>
-                </div>
-                <p class="strength-note">${s.note}</p>
-            </div>
-        `).join('');
-    
-    // Weaknesses
-    document.getElementById('weaknessesList').innerHTML = profile.weaknesses
-        .map(w => `
-            <div class="weakness-item priority-${w.priority}">
-                <div class="weakness-header">
-                    <span class="weakness-topic">${w.topic}</span>
-                    <span class="priority-badge">${w.priority} priority</span>
-                </div>
-                <div class="progress-bar small">
-                    <div class="progress-fill warning" style="width: ${w.proficiency_percent}%"></div>
-                </div>
-                <p class="weakness-note">${w.note}</p>
-            </div>
-        `).join('');
-    
-    // Stats preview
-    document.getElementById('estimatedWeeks').textContent = profile.estimated_weeks_to_proficiency;
-}
-
-function animateScore(targetScore, correct, total) {
-    let current = 0;
-    const increment = targetScore / 50;
-    const interval = setInterval(() => {
-        current += increment;
-        if (current >= targetScore) {
-            current = targetScore;
-            clearInterval(interval);
+    try {
+        const response = await fetch('/api/roadmap/generate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                assessment_id: parseInt(assessmentId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to generate roadmap');
         }
         
-        document.getElementById('scoreDisplay').textContent = `${Math.round(current)}%`;
+        displayRoadmap(data.roadmap);
         
-        // Animate circle
-        const circumference = 2 * Math.PI * 90;
-        const offset = circumference - (current / 100) * circumference;
-        document.getElementById('scoreCircle').style.strokeDashoffset = offset;
-    }, 20);
+    } catch (error) {
+        content.innerHTML = `<div class="error-message" style="display: block;">Error: ${error.message}</div>`;
+        console.error('Roadmap error:', error);
+    }
+}
+
+function displayRoadmap(roadmap) {
+    const content = document.getElementById('roadmapContent');
+    const modal = document.getElementById('roadmapModal');
     
-    document.getElementById('scoreFraction').textContent = `${correct}/${total} Correct`;
-}
-
-function renderDifficultyBreakdown(breakdown) {
-    ['beginner', 'intermediate', 'advanced'].forEach(level => {
-        const data = breakdown[level];
-        const percent = (data.correct / data.total) * 100;
+    // Safety checks for undefined/null values
+    if (!roadmap) {
+        content.innerHTML = '<p>Error loading roadmap</p>';
+        return;
+    }
+    
+    roadmap.weeks = roadmap.weeks || [];
+    roadmap.milestones = roadmap.milestones || [];
+    roadmap.success_tips = roadmap.success_tips || [];
+    roadmap.focus_areas = roadmap.focus_areas || [];
+    roadmap.total_weeks = roadmap.total_weeks || 8;
+    roadmap.skill_level = roadmap.skill_level || 'beginner';
+    
+    let html = `
+        <style>
+            .roadmap-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px 20px;
+                border-radius: 12px;
+                text-align: center;
+                margin-bottom: 40px;
+            }
+            
+            .roadmap-title {
+                font-size: 32px;
+                margin-bottom: 10px;
+                font-weight: 700;
+            }
+            
+            .roadmap-overview {
+                font-size: 16px;
+                line-height: 1.8;
+                opacity: 0.95;
+            }
+            
+            .weeks-timeline {
+                position: relative;
+                padding: 40px 0;
+            }
+            
+            .weeks-timeline::before {
+                content: '';
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 4px;
+                height: 100%;
+                background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            }
+            
+            .week-item {
+                margin-bottom: 50px;
+                opacity: 0;
+                animation: slideIn 0.6s ease forwards;
+            }
+            
+            .week-item:nth-child(1) { animation-delay: 0.1s; }
+            .week-item:nth-child(2) { animation-delay: 0.2s; }
+            .week-item:nth-child(3) { animation-delay: 0.3s; }
+            .week-item:nth-child(4) { animation-delay: 0.4s; }
+            .week-item:nth-child(5) { animation-delay: 0.5s; }
+            .week-item:nth-child(6) { animation-delay: 0.6s; }
+            
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .week-content {
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                margin-left: 50%;
+                position: relative;
+            }
+            
+            .week-content::before {
+                content: '';
+                position: absolute;
+                left: -20px;
+                top: 30px;
+                width: 20px;
+                height: 20px;
+                background: white;
+                border: 4px solid #667eea;
+                border-radius: 50%;
+            }
+            
+            .week-number {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+            
+            .week-title {
+                font-size: 24px;
+                font-weight: 700;
+                color: #2d3748;
+                margin-bottom: 5px;
+            }
+            
+            .week-tagline {
+                color: #667eea;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 15px;
+            }
+            
+            .week-motivation {
+                background: #e8ebff;
+                border-left: 4px solid #667eea;
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #2d3748;
+                font-style: italic;
+            }
+            
+            .week-section-title {
+                font-weight: 600;
+                color: #2d3748;
+                margin-top: 15px;
+                margin-bottom: 10px;
+                font-size: 14px;
+            }
+            
+            .week-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .week-list li {
+                padding: 8px 0;
+                padding-left: 25px;
+                position: relative;
+                font-size: 14px;
+                color: #4a5568;
+                line-height: 1.6;
+            }
+            
+            .week-list li::before {
+                content: '✓';
+                position: absolute;
+                left: 0;
+                color: #48bb78;
+                font-weight: 700;
+            }
+            
+            .milestones-section {
+                background: #f7fafc;
+                padding: 40px 20px;
+                border-radius: 12px;
+                margin: 40px 0;
+            }
+            
+            .milestones-title {
+                font-size: 28px;
+                font-weight: 700;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .milestone-item {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border-left: 4px solid #667eea;
+                display: flex;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .milestone-week {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-weight: 600;
+                min-width: 80px;
+                text-align: center;
+            }
+            
+            .milestone-content h4 {
+                margin: 0 0 5px 0;
+                color: #2d3748;
+            }
+            
+            .milestone-content p {
+                margin: 0;
+                color: #718096;
+                font-size: 14px;
+            }
+            
+            .tips-section {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px 20px;
+                border-radius: 12px;
+                margin: 40px 0;
+                text-align: center;
+            }
+            
+            .tips-title {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 30px;
+            }
+            
+            .tips-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-top: 20px;
+            }
+            
+            .tip-card {
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid rgba(255,255,255,0.2);
+            }
+            
+            .tip-card p {
+                margin: 0;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            
+            .cta-section {
+                text-align: center;
+                margin-top: 40px;
+                padding: 40px;
+                background: #f7fafc;
+                border-radius: 12px;
+            }
+            
+            .cta-text {
+                font-size: 20px;
+                font-weight: 600;
+                color: #2d3748;
+                margin-bottom: 20px;
+            }
+            
+            .focus-badge {
+                display: inline-block;
+                background: #fed7d7;
+                color: #c53030;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+        </style>
         
-        document.getElementById(`${level}Score`).textContent = 
-            `${data.correct}/${data.total}`;
-        document.getElementById(`${level}Progress`).style.width = `${percent}%`;
-    });
+        <div class="roadmap-header">
+            <div class="roadmap-title">${roadmap.roadmap_title || 'Your Learning Roadmap'}</div>
+            <div class="roadmap-overview">${roadmap.overview || 'Your personalized learning path'}</div>
+        </div>
+        
+        <div class="weeks-timeline">
+    `;
+    
+    // Display weeks
+    if (roadmap.weeks && roadmap.weeks.length > 0) {
+        roadmap.weeks.forEach((week, index) => {
+            const focusAreas = (week.focus_areas && Array.isArray(week.focus_areas)) ? week.focus_areas : [];
+            const objectives = (week.learning_objectives && Array.isArray(week.learning_objectives)) ? week.learning_objectives : [];
+            const resources = (week.resources && Array.isArray(week.resources)) ? week.resources : [];
+            const tasks = (week.daily_tasks && Array.isArray(week.daily_tasks)) ? week.daily_tasks : [];
+            
+            html += `
+                <div class="week-item">
+                    <div class="week-content">
+                        <div class="week-number">Week ${week.week || index + 1} of ${roadmap.total_weeks}</div>
+                        ${week.weak_focus ? '<span class="focus-badge">🎯 Focus on Weak Areas</span>' : ''}
+                        <div class="week-title">${week.title || 'Week ' + (index + 1)}</div>
+                        <div class="week-tagline">${week.tagline || ''}</div>
+                        <div class="week-motivation">"${week.motivation || 'Keep pushing forward!'}"</div>
+                        
+                        <div class="week-section-title">📚 Focus Areas</div>
+                        <ul class="week-list">
+                            ${focusAreas.length > 0 ? focusAreas.map(area => `<li>${area}</li>`).join('') : '<li>Core learning</li>'}
+                        </ul>
+                        
+                        <div class="week-section-title">🎯 Learning Objectives</div>
+                        <ul class="week-list">
+                            ${objectives.length > 0 ? objectives.map(obj => `<li>${obj}</li>`).join('') : '<li>Progress your skills</li>'}
+                        </ul>
+                        
+                        <div class="week-section-title">📖 Resources</div>
+                        <ul class="week-list">
+                            ${resources.length > 0 ? resources.map(r => `<li><strong>${r.title || 'Resource'}</strong> (${r.time_estimate || '2 hours'})<br/><span style="color: #a0aec0; font-size: 13px;">${r.description || 'Learning material'}</span></li>`).join('') : '<li>Study materials provided</li>'}
+                        </ul>
+                        
+                        <div class="week-section-title">✏️ Daily Schedule</div>
+                        <ul class="week-list">
+                            ${tasks.length > 0 ? tasks.map(task => `<li>${task}</li>`).join('') : '<li>Follow your learning schedule</li>'}
+                        </ul>
+                        
+                        <div class="week-section-title">🏁 Weekly Milestone</div>
+                        <div style="background: #e6fffa; padding: 12px; border-radius: 6px; color: #234e52; font-weight: 500;">
+                            ${week.milestone || 'Complete this week successfully'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += `
+        </div>
+        
+        <div class="milestones-section">
+            <div class="milestones-title">🏆 Key Checkpoints</div>
+    `;
+    
+    // Display milestones
+    if (roadmap.milestones && roadmap.milestones.length > 0) {
+        roadmap.milestones.forEach(milestone => {
+            html += `
+                <div class="milestone-item">
+                    <div class="milestone-week">Week ${milestone.week || 1}</div>
+                    <div class="milestone-content">
+                        <h4>${milestone.title || 'Milestone'}</h4>
+                        <p>${milestone.description || 'Progress made'}</p>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += `
+        </div>
+        
+        <div class="tips-section">
+            <div class="tips-title">💡 Success Tips for Your Journey</div>
+            <div class="tips-grid">
+    `;
+    
+    // Display tips
+    if (roadmap.success_tips && roadmap.success_tips.length > 0) {
+        roadmap.success_tips.forEach(tip => {
+            html += `
+                <div class="tip-card">
+                    <p>${tip || 'Keep learning'}</p>
+                </div>
+            `;
+        });
+    }
+    
+    html += `
+            </div>
+        </div>
+        
+        <div class="cta-section">
+            <div class="cta-text">🚀 You're Ready to Transform!</div>
+            <p style="color: #718096; margin-bottom: 20px;">
+                In the next ${roadmap.total_weeks} weeks, you'll go from ${roadmap.skill_level} to proficient in ${(roadmap.focus_areas && roadmap.focus_areas.length > 0) ? roadmap.focus_areas.join(', ') : 'this skill'}.
+            </p>
+            <button class="btn btn-primary btn-large" onclick="closeRoadmap()">
+                Start Your Journey! 🎯
+            </button>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    
+    // Scroll to top of modal
+    setTimeout(() => {
+        modal.scrollTop = 0;
+        content.scrollTop = 0;
+    }, 100);
 }
 
-function generateRoadmap() {
-    alert('Roadmap generation feature coming soon!');
-    // Will be implemented in next phase
+function closeRoadmap() {
+    document.getElementById('roadmapModal').style.display = 'none';
 }
 
-// Load results when page loads
-loadResults();
+// Initialize on page load
+window.addEventListener('load', initializeResults);
 </script>
 {% endblock %}

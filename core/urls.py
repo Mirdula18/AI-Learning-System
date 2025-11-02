@@ -9,6 +9,7 @@ urlpatterns = [
     path('profile/', views.profile_page, name='profile'),
     path('courses/', views.courses_page, name='courses'),
     path('assessment/', views.assessment_page, name='assessment'),
+    path('results/', views.results_page, name='results_page_simple'),
     path('results/<int:assessment_id>/', views.results_page, name='results'),
     
     # API endpoints
@@ -20,5 +21,6 @@ urlpatterns = [
     path('api/assessment/submit/', views.submit_assessment, name='api_submit_assessment'),
     path('api/assessment/<int:assessment_id>/results/', views.get_results, name='api_results'),
     path('api/assessment/start-custom/', views.start_assessment, name='api_start_assessment'),
+    path('api/roadmap/generate/', views.generate_roadmap, name='api_generate_roadmap'),
 
 ]
