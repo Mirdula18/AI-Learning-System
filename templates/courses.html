@@ -6,26 +6,27 @@
 <div class="courses-container">
     <div class="courses-header">
         <h2>What Do You Want to Learn?</h2>
-        <p>Type the course or topic you want to master</p>
+        <p>Type any course or topic you want to master</p>
     </div>
     
     <div class="custom-course-section">
         <div class="custom-course-card">
             <h3>✨ Create Custom Course</h3>
-            <p>Enter any course or topic you'd like to learn</p>
+            <p>Enter any course or topic you'd like to learn about</p>
             
             <div class="custom-input-group">
                 <input 
                     type="text" 
                     id="customCourse" 
-                    placeholder="e.g., Web Development, Machine Learning, Data Analysis, React, Django, etc..."
+                    placeholder="e.g., Web Development, AI, Data Science, Python, React, etc..."
                     class="custom-course-input"
+                    autocomplete="off"
                 >
                 <button class="btn btn-primary" onclick="startCustomCourse()">Start Learning</button>
             </div>
             
             <div id="suggestions" class="suggestions-list">
-                <p class="suggestions-title">Popular Courses:</p>
+                <p class="suggestions-title">Popular Topics:</p>
                 <div class="suggestion-tags">
                     <span class="suggestion-tag" onclick="setCustomCourse('Web Development')">Web Development</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('Machine Learning')">Machine Learning</span>
@@ -35,6 +36,8 @@
                     <span class="suggestion-tag" onclick="setCustomCourse('Python')">Python</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('JavaScript')">JavaScript</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('SQL')">SQL</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Artificial Intelligence')">Artificial Intelligence</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Cloud Computing')">Cloud Computing</span>
                 </div>
             </div>
             
@@ -46,7 +49,7 @@
 <div id="transitionOverlay" class="transition-overlay" style="display: none;">
     <div class="transition-content">
         <div class="spinner"></div>
-        <p id="transitionMessage">Preparing your personalized assessment...</p>
+        <p id="transitionMessage">🚀 Generating your personalized assessment with dynamic questions...</p>
     </div>
 </div>
 {% endblock %}
@@ -60,6 +63,7 @@ if (!localStorage.getItem('token')) {
 
 function setCustomCourse(courseName) {
     document.getElementById('customCourse').value = courseName;
+    document.getElementById('customCourse').focus();
 }
 
 async function startCustomCourse() {
@@ -68,13 +72,13 @@ async function startCustomCourse() {
     
     // Validate input
     if (!courseName || courseName.length < 2) {
-        errorDiv.textContent = 'Please enter a valid course name (at least 2 characters)';
+        errorDiv.textContent = '❌ Please enter a valid course/topic name (at least 2 characters)';
         errorDiv.style.display = 'block';
         return;
     }
     
     if (courseName.length > 100) {
-        errorDiv.textContent = 'Course name too long (max 100 characters)';
+        errorDiv.textContent = '❌ Course name too long (max 100 characters)';
         errorDiv.style.display = 'block';
         return;
     }
@@ -96,23 +100,23 @@ async function startCustomCourse() {
             })
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to start assessment');
-        }
-        
         const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to start assessment');
+        }
         
         // Store quiz data in sessionStorage
         sessionStorage.setItem('quiz_data', JSON.stringify(data.quiz));
         
-        // Redirect to assessment
+        // Redirect to assessment page
         setTimeout(() => {
             window.location.href = '/assessment/';
-        }, 2000);
+        }, 1500);
         
     } catch (error) {
         overlay.style.display = 'none';
-        errorDiv.textContent = 'Failed to start assessment. Please try again.';
+        errorDiv.textContent = `❌ ${error.message || 'Failed to generate assessment. Please try again.'}`;
         errorDiv.style.display = 'block';
         console.error('Error:', error);
     }

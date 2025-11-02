@@ -51,21 +51,24 @@ class Assessment(models.Model):
     STATUS_CHOICES = [
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
-        ('abandoned', 'Abandoned')
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)  # Optional for custom courses
     quiz_data = models.JSONField()
-    user_answers = models.JSONField(null=True, blank=True)
+    user_answers = models.JSONField(default=dict, blank=True)
+    evaluation_results = models.JSONField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
-    score = models.FloatField(null=True, blank=True)
-    started_at = models.DateTimeField(default=timezone.now)
-    submitted_at = models.DateTimeField(null=True, blank=True)
-    time_taken_seconds = models.IntegerField(null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    custom_course_name = models.CharField(max_length=200, null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-started_at']
     
     def __str__(self):
-        return f"{self.user.username} - {self.course.title} Assessment"
+        course_name = self.custom_course_name or (self.course.title if self.course else 'Unknown')
+        return f"{self.user.username} - {course_name}"
 
 
 class SkillProfile(models.Model):
@@ -83,7 +86,7 @@ class SkillProfile(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)
     assessment = models.OneToOneField(Assessment, on_delete=models.CASCADE)
     skill_level = models.CharField(max_length=20, choices=SKILL_LEVELS)
     confidence_score = models.IntegerField()

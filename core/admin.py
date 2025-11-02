@@ -3,27 +3,21 @@ from .models import LearnerProfile, Course, Assessment, SkillProfile
 
 @admin.register(LearnerProfile)
 class LearnerProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'learning_goal', 'weekly_hours', 'created_at']
-    list_filter = ['learning_goal', 'preferred_time']
-    search_fields = ['user__username', 'user__email']
-
+    list_display = ['user', 'learning_goal', 'weekly_hours']
+    search_fields = ['user__username']
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['title', 'course_id', 'difficulty_range', 'is_available']
-    list_filter = ['is_available']
-    search_fields = ['title', 'course_id']
-
+    list_display = ['title', 'difficulty_range', 'course_id']
+    search_fields = ['title']
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-    list_display = ['user', 'course', 'status', 'score', 'started_at']
-    list_filter = ['status', 'course']
+    list_display = ['user', 'course', 'status', 'started_at']
     search_fields = ['user__username']
-
+    readonly_fields = ['quiz_data', 'user_answers', 'evaluation_results']
 
 @admin.register(SkillProfile)
 class SkillProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'course', 'skill_level', 'confidence_score', 'created_at']
-    list_filter = ['skill_level', 'learning_pace']
+    list_display = ['user', 'skill_level']
     search_fields = ['user__username']

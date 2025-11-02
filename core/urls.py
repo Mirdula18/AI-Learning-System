@@ -19,4 +19,6 @@ urlpatterns = [
     path('api/assessment/start/', views.start_assessment, name='api_start_assessment'),
     path('api/assessment/submit/', views.submit_assessment, name='api_submit_assessment'),
     path('api/assessment/<int:assessment_id>/results/', views.get_results, name='api_results'),
+    path('api/assessment/start-custom/', views.start_assessment, name='api_start_assessment'),
+
 ]

@@ -164,34 +164,54 @@ def get_courses(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def start_assessment(request):
-    """Generate and start assessment"""
+    """Generate and start assessment for custom course typed by user"""
     try:
         user = request.user
-        course_id = request.data.get('course_id')
+        course_name = request.data.get('course_name', '').strip()
         
-        course = Course.objects.get(course_id=course_id)
+        # Validate course name
+        if not course_name or len(course_name) < 2:
+            return Response(
+                {'error': 'Course name must be at least 2 characters'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        # Generate quiz
-        quiz_data = generate_assessment_quiz(course, user)
+        if len(course_name) > 100:
+            return Response(
+                {'error': 'Course name too long (max 100 characters)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Import here to avoid circular imports
+        from .quiz_generator import generate_assessment_quiz
+        
+        # Generate dynamic quiz for the custom course
+        quiz_data = generate_assessment_quiz(course_name, user)
         
         if not quiz_data:
+            logger.error(f"Failed to generate quiz for course: {course_name}")
             return Response(
-                {'error': 'Failed to generate quiz'},
+                {'error': 'Failed to generate assessment. Please try again or use a different topic.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        # Create assessment
+        # Create assessment record
         assessment = Assessment.objects.create(
             user=user,
-            course=course,
+            course=None,  # No associated course since it's custom
             quiz_data=quiz_data,
             status='in_progress',
             started_at=timezone.now()
         )
         
-        # Prepare quiz for frontend (hide answers)
+        # Store custom course name for reference
+        assessment.custom_course_name = course_name
+        assessment.save()
+        
+        # Prepare quiz for frontend (hide correct answers)
         quiz_for_display = {
             'assessment_id': assessment.id,
+            'course_name': course_name,
             'metadata': quiz_data['quiz_metadata'],
             'questions': [
                 {
@@ -200,29 +220,27 @@ def start_assessment(request):
                     'difficulty': q['difficulty'],
                     'topic': q['topic'],
                     'question_text': q['question_text'],
-                    'code_snippet': q.get('code_snippet'),
+                    'code_snippet': q.get('code_snippet', ''),
                     'options': q['options']
                 }
                 for q in quiz_data['questions']
             ]
         }
         
+        logger.info(f"Assessment started for user {user.id} - Topic: {course_name}")
+        
         return Response({
             'message': 'Assessment generated successfully',
             'quiz': quiz_for_display
-        })
+        }, status=status.HTTP_200_OK)
         
-    except Course.DoesNotExist:
-        return Response(
-            {'error': 'Course not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
     except Exception as e:
-        logger.error(f"Assessment start error: {str(e)}")
+        logger.error(f"Error in start_custom_assessment: {str(e)}")
         return Response(
-            {'error': 'Failed to start assessment'},
+            {'error': 'An error occurred. Please try again.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 
 @api_view(['POST'])

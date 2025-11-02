@@ -2,46 +2,221 @@ import google.generativeai as genai
 from django.conf import settings
 import json
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
-def generate_assessment_quiz(course, user):
+def generate_assessment_quiz(course_name, user=None):
     """
-    Generate personalized quiz using Gemini API
+    Generate dynamic personalized quiz using Gemini API (10 questions)
+    Different questions generated each time for the same topic
     """
     
-    # Simple hardcoded quiz for now (fallback)
-    fallback_quiz = {
-        "quiz_metadata": {
-            "course_id": course.course_id,
-            "total_questions": 10,
-            "estimated_time_minutes": 15
-        },
-        "questions": [
-            {"question_id": "q1", "question_number": 1, "difficulty": "beginner", "topic": "Variables & Data Types", "question_text": "What does the print() function do in Python?", "code_snippet": "print('Hello')", "options": {"A": "Displays output to console", "B": "Stores data", "C": "Creates a variable", "D": "Deletes data"}, "correct_answer": "A", "explanation": "print() outputs text to the screen.", "concept_tested": "Basic I/O"},
-            {"question_id": "q2", "question_number": 2, "difficulty": "beginner", "topic": "Variables & Data Types", "question_text": "What is the output of: print(2 + 3)?", "code_snippet": "print(2 + 3)", "options": {"A": "5", "B": "23", "C": "2 + 3", "D": "Error"}, "correct_answer": "A", "explanation": "2 + 3 equals 5", "concept_tested": "Arithmetic operations"},
-            {"question_id": "q3", "question_number": 3, "difficulty": "beginner", "topic": "Variables & Data Types", "question_text": "What is a variable?", "code_snippet": "x = 10", "options": {"A": "A container to store data", "B": "A function", "C": "A library", "D": "A syntax error"}, "correct_answer": "A", "explanation": "Variables store values in memory.", "concept_tested": "Variable concept"},
-            {"question_id": "q4", "question_number": 4, "difficulty": "beginner", "topic": "Control Flow", "question_text": "What does an if statement do?", "code_snippet": "if x > 5:\n    print('Big')", "options": {"A": "Executes code conditionally", "B": "Loops forever", "C": "Defines a function", "D": "Creates a variable"}, "correct_answer": "A", "explanation": "if statements execute code only when conditions are true.", "concept_tested": "Conditional logic"},
-            {"question_id": "q5", "question_number": 5, "difficulty": "beginner", "topic": "Control Flow", "question_text": "What will print: x = 3; if x < 5: print('yes')", "code_snippet": "x = 3\nif x < 5:\n    print('yes')", "options": {"A": "yes", "B": "no", "C": "Error", "D": "Nothing"}, "correct_answer": "A", "explanation": "3 < 5 is true, so 'yes' prints.", "concept_tested": "If statement evaluation"},
-            {"question_id": "q6", "question_number": 6, "difficulty": "intermediate", "topic": "Lists & Dictionaries", "question_text": "What is a list in Python?", "code_snippet": "my_list = [1, 2, 3]", "options": {"A": "An ordered collection of items", "B": "A single value", "C": "A function", "D": "A string"}, "correct_answer": "A", "explanation": "Lists store multiple items in order.", "concept_tested": "List concept"},
-            {"question_id": "q7", "question_number": 7, "difficulty": "intermediate", "topic": "Lists & Dictionaries", "question_text": "How do you access the first item in a list?", "code_snippet": "my_list = ['a', 'b', 'c']\nprint(my_list[0])", "options": {"A": "my_list[0]", "B": "my_list[1]", "C": "my_list.first()", "D": "my_list.get(0)"}, "correct_answer": "A", "explanation": "Python uses 0-based indexing.", "concept_tested": "List indexing"},
-            {"question_id": "q8", "question_number": 8, "difficulty": "intermediate", "topic": "Functions", "question_text": "What is a function?", "code_snippet": "def greet():\n    print('Hello')", "options": {"A": "A reusable block of code", "B": "A variable", "C": "A data type", "D": "A loop"}, "correct_answer": "A", "explanation": "Functions encapsulate reusable code.", "concept_tested": "Function concept"},
-            {"question_id": "q9", "question_number": 9, "difficulty": "intermediate", "topic": "Functions", "question_text": "What does 'return' do in a function?", "code_snippet": "def add(a, b):\n    return a + b", "options": {"A": "Sends a value back to caller", "B": "Prints output", "C": "Ends the program", "D": "Stores a variable"}, "correct_answer": "A", "explanation": "return sends values back from functions.", "concept_tested": "Return statements"},
-            {"question_id": "q10", "question_number": 10, "difficulty": "intermediate", "topic": "Loops", "question_text": "What does a for loop do?", "code_snippet": "for i in range(3):\n    print(i)", "options": {"A": "Repeats code multiple times", "B": "Makes decisions", "C": "Stores data", "D": "Creates a function"}, "correct_answer": "A", "explanation": "for loops iterate over sequences.", "concept_tested": "Loop concept"},
-            {"question_id": "q11", "question_number": 11, "difficulty": "intermediate", "topic": "Loops", "question_text": "What is the output: for i in range(3): print(i)", "code_snippet": "for i in range(3):\n    print(i)", "options": {"A": "0 1 2", "B": "1 2 3", "C": "0 1 2 3", "D": "Error"}, "correct_answer": "A", "explanation": "range(3) produces 0, 1, 2", "concept_tested": "range() function"},
-            {"question_id": "q12", "question_number": 12, "difficulty": "intermediate", "topic": "Error Handling", "question_text": "What is try-except used for?", "code_snippet": "try:\n    x = 1/0\nexcept:\n    print('Error')", "options": {"A": "Catches and handles errors", "B": "Defines a function", "C": "Creates a loop", "D": "Stores variables"}, "correct_answer": "A", "explanation": "try-except handles runtime errors gracefully.", "concept_tested": "Error handling"},
-            {"question_id": "q13", "question_number": 13, "difficulty": "advanced", "topic": "OOP Basics", "question_text": "What is a class?", "code_snippet": "class Dog:\n    def __init__(self, name):\n        self.name = name", "options": {"A": "A blueprint for objects", "B": "A function", "C": "A list", "D": "A string"}, "correct_answer": "A", "explanation": "Classes define object blueprints.", "concept_tested": "Class concept"},
-            {"question_id": "q14", "question_number": 14, "difficulty": "advanced", "topic": "OOP Basics", "question_text": "What is an object?", "code_snippet": "dog = Dog('Buddy')", "options": {"A": "An instance of a class", "B": "A data type", "C": "A function", "D": "A variable name"}, "correct_answer": "A", "explanation": "Objects are instances created from classes.", "concept_tested": "Object concept"},
-            {"question_id": "q15", "question_number": 15, "difficulty": "advanced", "topic": "Advanced Python", "question_text": "What is list comprehension?", "code_snippet": "squares = [x**2 for x in range(5)]", "options": {"A": "Concise way to create lists", "B": "A loop statement", "C": "Error syntax", "D": "A function"}, "correct_answer": "A", "explanation": "List comprehension creates lists efficiently.", "concept_tested": "List comprehension"},
-        ]
-    }
+    # Create unique seed for randomization
+    seed = random.randint(10000, 99999)
     
+    prompt = f"""You are an expert educator creating assessment questions for personalized learning.
+
+TOPIC/COURSE: {course_name}
+SEED: {seed}
+
+CRITICAL INSTRUCTIONS:
+1. Generate exactly 10 NEW, UNIQUE multiple-choice questions about: {course_name}
+2. Each API call must produce DIFFERENT questions (vary examples, scenarios, sub-topics)
+3. DO NOT repeat questions from previous generations
+4. Mix difficulty: 3 beginner (basic concepts), 5 intermediate (applications), 2 advanced (edge cases)
+5. Include code snippets if relevant to {course_name}
+
+OUTPUT: Return ONLY valid JSON (no markdown, no code blocks, no text before/after):
+{{
+  "quiz_metadata": {{
+    "course_name": "{course_name}",
+    "total_questions": 10,
+    "estimated_time_minutes": 10,
+    "seed": {seed}
+  }},
+  "questions": [
+    {{
+      "question_id": "q1",
+      "question_number": 1,
+      "difficulty": "beginner",
+      "topic": "Basic Concepts of {course_name}",
+      "question_text": "What is the primary purpose of {course_name}?",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A - detailed answer",
+        "B": "Option B - detailed answer",
+        "C": "Option C - detailed answer",
+        "D": "Option D - detailed answer"
+      }},
+      "correct_answer": "A",
+      "explanation": "Detailed explanation of why A is correct",
+      "concept_tested": "Understanding fundamentals"
+    }},
+    {{
+      "question_id": "q2",
+      "question_number": 2,
+      "difficulty": "beginner",
+      "topic": "Introduction to {course_name}",
+      "question_text": "Question about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "B",
+      "explanation": "Explanation",
+      "concept_tested": "Key concept"
+    }},
+    {{
+      "question_id": "q3",
+      "question_number": 3,
+      "difficulty": "beginner",
+      "topic": "Fundamentals of {course_name}",
+      "question_text": "Another beginner question about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "C",
+      "explanation": "Explanation",
+      "concept_tested": "Core understanding"
+    }},
+    {{
+      "question_id": "q4",
+      "question_number": 4,
+      "difficulty": "intermediate",
+      "topic": "Practical Applications of {course_name}",
+      "question_text": "Practical question about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "A",
+      "explanation": "Explanation",
+      "concept_tested": "Application skills"
+    }},
+    {{
+      "question_id": "q5",
+      "question_number": 5,
+      "difficulty": "intermediate",
+      "topic": "Implementation of {course_name}",
+      "question_text": "How would you implement {course_name} in practice?",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "B",
+      "explanation": "Explanation",
+      "concept_tested": "Practical implementation"
+    }},
+    {{
+      "question_id": "q6",
+      "question_number": 6,
+      "difficulty": "intermediate",
+      "topic": "Best Practices in {course_name}",
+      "question_text": "Best practice question about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "C",
+      "explanation": "Explanation",
+      "concept_tested": "Best practices"
+    }},
+    {{
+      "question_id": "q7",
+      "question_number": 7,
+      "difficulty": "intermediate",
+      "topic": "Advanced Concepts of {course_name}",
+      "question_text": "Intermediate challenge about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "D",
+      "explanation": "Explanation",
+      "concept_tested": "Problem solving"
+    }},
+    {{
+      "question_id": "q8",
+      "question_number": 8,
+      "difficulty": "intermediate",
+      "topic": "Real-world Applications of {course_name}",
+      "question_text": "Real-world scenario about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "A",
+      "explanation": "Explanation",
+      "concept_tested": "Applied knowledge"
+    }},
+    {{
+      "question_id": "q9",
+      "question_number": 9,
+      "difficulty": "advanced",
+      "topic": "Expert Knowledge in {course_name}",
+      "question_text": "Advanced edge case about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "B",
+      "explanation": "Explanation",
+      "concept_tested": "Advanced understanding"
+    }},
+    {{
+      "question_id": "q10",
+      "question_number": 10,
+      "difficulty": "advanced",
+      "topic": "Mastery of {course_name}",
+      "question_text": "Expert-level question about {course_name}",
+      "code_snippet": "",
+      "options": {{
+        "A": "Option A",
+        "B": "Option B",
+        "C": "Option C",
+        "D": "Option D"
+      }},
+      "correct_answer": "C",
+      "explanation": "Explanation",
+      "concept_tested": "Mastery level"
+    }}
+  ]
+}}
+
+Remember: Output ONLY the JSON object above. No explanations, no markdown, no code blocks."""
+
     try:
         model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content("Generate 15 Python quiz questions in JSON format")
         
+        response = model.generate_content(prompt)
         response_text = response.text.strip()
         
         # Remove markdown code blocks if present
@@ -55,15 +230,15 @@ def generate_assessment_quiz(course, user):
         quiz_data = json.loads(response_text)
         
         if validate_quiz_structure(quiz_data):
-            logger.info(f"Quiz generated successfully for {course.title}")
+            logger.info(f"Dynamic quiz generated for: {course_name}")
             return quiz_data
         else:
-            logger.warning("Generated quiz validation failed, using fallback")
-            return fallback_quiz
+            logger.warning(f"Generated quiz validation failed for {course_name}")
+            return None
             
     except Exception as e:
-        logger.error(f"Quiz generation failed: {str(e)}, using fallback")
-        return fallback_quiz
+        logger.error(f"Quiz generation error for '{course_name}': {str(e)}")
+        return None
 
 
 def validate_quiz_structure(quiz_data):
@@ -75,7 +250,7 @@ def validate_quiz_structure(quiz_data):
         
         questions = quiz_data['questions']
         
-        if len(questions) != 15:
+        if len(questions) != 10:
             return False
         
         required_fields = ['question_id', 'difficulty', 'topic', 'question_text', 
