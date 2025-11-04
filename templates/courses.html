@@ -11,7 +11,7 @@
     
     <div class="custom-course-section">
         <div class="custom-course-card">
-            <h3>✨ Create Custom Course</h3>
+            <h3> Create Custom Course</h3>
             <p>Enter any course or topic you'd like to learn about</p>
             
             <div class="custom-input-group">
@@ -49,7 +49,7 @@
 <div id="transitionOverlay" class="transition-overlay" style="display: none;">
     <div class="transition-content">
         <div class="spinner"></div>
-        <p id="transitionMessage">🚀 Generating your personalized assessment with dynamic questions...</p>
+        <p id="transitionMessage"> Generating your personalized assessment with dynamic questions...</p>
     </div>
 </div>
 {% endblock %}
@@ -72,13 +72,13 @@ async function startCustomCourse() {
     
     // Validate input
     if (!courseName || courseName.length < 2) {
-        errorDiv.textContent = '❌ Please enter a valid course/topic name (at least 2 characters)';
+        errorDiv.textContent = ' Please enter a valid course/topic name (at least 2 characters)';
         errorDiv.style.display = 'block';
         return;
     }
     
     if (courseName.length > 100) {
-        errorDiv.textContent = '❌ Course name too long (max 100 characters)';
+        errorDiv.textContent = ' Course name too long (max 100 characters)';
         errorDiv.style.display = 'block';
         return;
     }
@@ -129,7 +129,7 @@ async function startCustomCourse() {
     } catch (error) {
         console.error('Error caught:', error);
         overlay.style.display = 'none';
-        errorDiv.textContent = `❌ ${error.message}`;
+        errorDiv.textContent = ` ${error.message}`;
         errorDiv.style.display = 'block';
     }
 }

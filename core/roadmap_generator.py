@@ -103,7 +103,7 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
     # Week 1: Assessment & Foundation
     weeks.append({
         "week": 1,
-        "title": "🚀 Start Your Journey",
+        "title": " Start Your Journey",
         "tagline": "Foundation & Getting Started",
         "focus_areas": [f"Introduction to {topic}", "Key Terminology", "Basic Principles"],
         "weak_focus": True if weaknesses else False,
@@ -132,10 +132,10 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
             "Answer 20 practice questions"
         ],
         "daily_tasks": [
-            "📖 Monday-Tuesday: Watch introductory videos (3 hrs)",
-            "📚 Wednesday: Read foundational material (2 hrs)",
-            "✏️ Thursday-Friday: Complete practice exercises (3 hrs)",
-            "🎯 Weekend: Consolidate learning, create summary notes (3 hrs)"
+            " Monday-Tuesday: Watch introductory videos (3 hrs)",
+            " Wednesday: Read foundational material (2 hrs)",
+            " Thursday-Friday: Complete practice exercises (3 hrs)",
+            " Weekend: Consolidate learning, create summary notes (3 hrs)"
         ],
         "milestone": "Understand basic concepts and vocabulary",
         "estimated_hours": weekly_hours,
@@ -149,7 +149,7 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
         
         weeks.append({
             "week": 2,
-            "title": "💡 Deep Dive Into Concepts",
+            "title": " Deep Dive Into Concepts",
             "tagline": weak_description,
             "focus_areas": weak_topics or [f"{topic} Core Concepts"],
             "weak_focus": True,
@@ -172,20 +172,20 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
                 "Solve real-world scenarios"
             ],
             "daily_tasks": [
-                "📖 Monday-Tuesday: Study core principles (4 hrs)",
-                "🔍 Wednesday: Review practical examples (2 hrs)",
-                "✏️ Thursday-Friday: Practice concept mapping (3 hrs)",
-                "📝 Weekend: Create concept summary cards (3 hrs)"
+                " Monday-Tuesday: Study core principles (4 hrs)",
+                " Wednesday: Review practical examples (2 hrs)",
+                " Thursday-Friday: Practice concept mapping (3 hrs)",
+                " Weekend: Create concept summary cards (3 hrs)"
             ],
             "milestone": "Deep understanding of core concepts",
             "estimated_hours": weekly_hours,
-            "motivation": "You're building a solid foundation. Keep going! 💪"
+            "motivation": "You're building a solid foundation. Keep going! "
         })
     
     if total_weeks >= 3:
         weeks.append({
             "week": 3,
-            "title": "🛠️ Hands-On Practice",
+            "title": " Hands-On Practice",
             "tagline": "Build Your First Real Project",
             "focus_areas": ["Practical Application", "Problem Solving", "Project Building"],
             "weak_focus": False,
@@ -208,20 +208,20 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
                 "Debug and optimize your solution"
             ],
             "daily_tasks": [
-                "💻 Monday-Wednesday: Build mini-project (6 hrs)",
-                "🔧 Thursday: Test and debug (2 hrs)",
-                "⚡ Friday: Optimize and improve (2 hrs)",
-                "📋 Weekend: Document and reflect (2 hrs)"
+                " Monday-Wednesday: Build mini-project (6 hrs)",
+                " Thursday: Test and debug (2 hrs)",
+                " Friday: Optimize and improve (2 hrs)",
+                " Weekend: Document and reflect (2 hrs)"
             ],
             "milestone": "Complete first practical project",
             "estimated_hours": weekly_hours,
-            "motivation": "You built something! That's a huge milestone 🎉"
+            "motivation": "You built something! That's a huge milestone "
         })
     
     if total_weeks >= 4:
         weeks.append({
             "week": 4,
-            "title": "🚀 Level Up",
+            "title": " Level Up",
             "tagline": "Intermediate Techniques & Patterns",
             "focus_areas": ["Advanced Concepts", "Best Practices", "Optimization"],
             "weak_focus": False,
@@ -244,20 +244,20 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
                 "Optimize existing solutions"
             ],
             "daily_tasks": [
-                "📚 Monday-Tuesday: Study advanced techniques (4 hrs)",
-                "💻 Wednesday-Thursday: Implement and practice (4 hrs)",
-                "⚡ Friday: Optimize solutions (2 hrs)",
-                "🎓 Weekend: Study best practices (2 hrs)"
+                " Monday-Tuesday: Study advanced techniques (4 hrs)",
+                " Wednesday-Thursday: Implement and practice (4 hrs)",
+                " Friday: Optimize solutions (2 hrs)",
+                " Weekend: Study best practices (2 hrs)"
             ],
             "milestone": "Master intermediate techniques",
             "estimated_hours": weekly_hours,
-            "motivation": "You're becoming proficient! The best is yet to come 🌟"
+            "motivation": "You're becoming proficient! The best is yet to come "
         })
     
     if total_weeks >= 5:
         weeks.append({
             "week": 5,
-            "title": "🎯 Build Bigger",
+            "title": " Build Bigger",
             "tagline": "Complex Project Integration",
             "focus_areas": ["System Design", "Integration", "Problem Solving"],
             "weak_focus": False,
@@ -281,20 +281,20 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
                 "Test thoroughly"
             ],
             "daily_tasks": [
-                "🏗️ Monday: Plan and design (2 hrs)",
-                "💻 Tuesday-Thursday: Implement features (6 hrs)",
-                "✨ Friday: Add advanced features (2 hrs)",
-                "✅ Weekend: Test and document (2 hrs)"
+                " Monday: Plan and design (2 hrs)",
+                " Tuesday-Thursday: Implement features (6 hrs)",
+                " Friday: Add advanced features (2 hrs)",
+                " Weekend: Test and document (2 hrs)"
             ],
             "milestone": "Complete medium complexity project",
             "estimated_hours": weekly_hours,
-            "motivation": "Projects speak louder than words! You're building a portfolio 📦"
+            "motivation": "Projects speak louder than words! You're building a portfolio "
         })
     
     if total_weeks >= 6:
         weeks.append({
             "week": 6,
-            "title": "🏆 Master Achiever",
+            "title": " Master Achiever",
             "tagline": "Final Push to Proficiency",
             "focus_areas": ["Mastery", "Optimization", "Real-World Skills"],
             "weak_focus": False,
@@ -317,14 +317,14 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
                 "Create production-ready code"
             ],
             "daily_tasks": [
-                "🎓 Monday-Tuesday: Study professional practices (4 hrs)",
-                "💻 Wednesday-Thursday: Build production-ready solution (4 hrs)",
-                "✨ Friday: Polish and optimize (2 hrs)",
-                "🎉 Weekend: Celebrate and reflect (2 hrs)"
+                " Monday-Tuesday: Study professional practices (4 hrs)",
+                " Wednesday-Thursday: Build production-ready solution (4 hrs)",
+                " Friday: Polish and optimize (2 hrs)",
+                " Weekend: Celebrate and reflect (2 hrs)"
             ],
             "milestone": "Achieve proficiency and professional readiness",
             "estimated_hours": weekly_hours,
-            "motivation": "You've reached your goal! From beginner to proficient 🚀"
+            "motivation": "You've reached your goal! From beginner to proficient "
         })
     
     # Create motivational message
@@ -350,12 +350,12 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
 def get_motivation_message(skill_level, weak_count, weeks):
     """Create personalized motivation message"""
     messages = {
-        'absolute_beginner': f"🌱 Welcome to your learning journey! You're starting from scratch, and that's awesome. In just {weeks} weeks of {5} hours per week, you'll transform from a complete beginner to a proficient professional. This roadmap is tailored to your unique learning needs. Let's do this! 💪",
-        'beginner': f"📈 Great! You have some foundation. In {weeks} weeks, we'll strengthen your weak areas and take your skills to the next level. You're on the right track! 🎯",
-        'intermediate': f"⚡ You're already solid! In {weeks} weeks of focused practice on your weaker areas, you'll achieve true proficiency. Time to master the details! 🔥",
-        'advanced': f"🚀 You're almost there! Just {weeks} more weeks to cross the finish line to mastery. Let's polish your weak spots and reach the summit! 🏔️"
+        'absolute_beginner': f" Welcome to your learning journey! You're starting from scratch, and that's awesome. In just {weeks} weeks of {5} hours per week, you'll transform from a complete beginner to a proficient professional. This roadmap is tailored to your unique learning needs. Let's do this! ",
+        'beginner': f" Great! You have some foundation. In {weeks} weeks, we'll strengthen your weak areas and take your skills to the next level. You're on the right track! ",
+        'intermediate': f" You're already solid! In {weeks} weeks of focused practice on your weaker areas, you'll achieve true proficiency. Time to master the details! ",
+        'advanced': f" You're almost there! Just {weeks} more weeks to cross the finish line to mastery. Let's polish your weak spots and reach the summit! "
     }
-    return messages.get(skill_level, "Let's start this amazing journey! 🌟")
+    return messages.get(skill_level, "Let's start this amazing journey! ")
 
 
 def get_personalized_tips(skill_level, weaknesses, weeks):
@@ -363,20 +363,20 @@ def get_personalized_tips(skill_level, weaknesses, weeks):
     tips = []
     
     # Motivational tip
-    tips.append("🎯 You've got this! Progress > Perfection. Small steps daily lead to big achievements.")
-    tips.append("⏰ Consistency is key. Show up every day, even if just for 30 minutes.")
+    tips.append(" You've got this! Progress > Perfection. Small steps daily lead to big achievements.")
+    tips.append(" Consistency is key. Show up every day, even if just for 30 minutes.")
     
     if weaknesses:
         weak_topics = [w['topic'] for w in weaknesses[:2]]
         tips.append(f"🎓 Extra focus on {weak_topics[0]}: This is your superpower to unlock!")
     
     tips.extend([
-        "💻 Build projects! Nothing beats learning by doing.",
-        "🤝 Connect with others learning the same topic - share, learn, grow together.",
-        "📝 Keep a learning journal - track what you learn and celebrate wins.",
-        "🔄 Review regularly - spaced repetition is your secret weapon.",
-        "🚫 Don't compare your beginning to someone else's middle.",
-        f"🏁 In {weeks} weeks, you'll be amazed at how far you've come!"
+        " Build projects! Nothing beats learning by doing.",
+        " Connect with others learning the same topic - share, learn, grow together.",
+        " Keep a learning journal - track what you learn and celebrate wins.",
+        " Review regularly - spaced repetition is your secret weapon.",
+        " Don't compare your beginning to someone else's middle.",
+        f" In {weeks} weeks, you'll be amazed at how far you've come!"
     ])
     
     return tips[:8]
@@ -389,28 +389,28 @@ def get_milestones(total_weeks):
     if total_weeks >= 2:
         milestones.append({
             "week": 1,
-            "title": "🎬 Journey Begins",
+            "title": " Journey Begins",
             "description": "Foundation laid, concepts understood"
         })
     
     if total_weeks >= 3:
         milestones.append({
             "week": 2,
-            "title": "📈 Building Momentum",
+            "title": " Building Momentum",
             "description": "Weak areas strengthened, confidence growing"
         })
     
     if total_weeks >= 4:
         milestones.append({
             "week": 3,
-            "title": "🎉 First Victory",
+            "title": " First Victory",
             "description": "First project completed! Proof of progress"
         })
     
     if total_weeks >= 6:
         milestones.append({
             "week": total_weeks,
-            "title": "🏆 Proficiency Achieved",
+            "title": " Proficiency Achieved",
             "description": "You're now proficient! Ready for real-world challenges"
         })
     
@@ -424,7 +424,7 @@ def get_project_ideas_focused(topic, total_weeks, weaknesses):
     projects = [
         {
             "week": 1,
-            "title": f"🎯 Master {weak_area or 'Your Weak Area'}",
+            "title": f" Master {weak_area or 'Your Weak Area'}",
             "description": f"Focused exercises to strengthen {weak_area or 'areas you are struggling with'}",
             "complexity": "beginner",
             "duration": "Daily practice",
@@ -435,7 +435,7 @@ def get_project_ideas_focused(topic, total_weeks, weaknesses):
     if total_weeks >= 2:
         projects.append({
             "week": 2,
-            "title": f"🛠️ Apply {weak_area or 'Core Concepts'}",
+            "title": f" Apply {weak_area or 'Core Concepts'}",
             "description": f"Build something using what you just learned about {weak_area or 'core concepts'}",
             "complexity": "beginner",
             "duration": "2-3 days",
@@ -445,7 +445,7 @@ def get_project_ideas_focused(topic, total_weeks, weaknesses):
     if total_weeks >= 3:
         projects.append({
             "week": 3,
-            "title": f"🚀 Complete Your First {topic} Project",
+            "title": f" Complete Your First {topic} Project",
             "description": "A complete project combining all learned concepts",
             "complexity": "intermediate",
             "duration": "Full week",
@@ -455,7 +455,7 @@ def get_project_ideas_focused(topic, total_weeks, weaknesses):
     if total_weeks >= 5:
         projects.append({
             "week": 5,
-            "title": f"💎 Advanced {topic} Project",
+            "title": f" Advanced {topic} Project",
             "description": "Push yourself with a more complex project",
             "complexity": "advanced",
             "duration": "2 weeks",

@@ -33,7 +33,7 @@
     
     <!-- Performance Section -->
     <div id="performanceSection" class="performance-section" style="display: none;">
-        <h2>📊 Performance Breakdown</h2>
+        <h2> Performance Breakdown</h2>
         
         <div class="difficulty-breakdown">
             <div class="breakdown-item">
@@ -71,19 +71,19 @@
     <!-- Insights Section -->
     <div id="insightsGrid" class="insights-grid" style="display: none;">
         <div class="insights-card">
-            <h3>💪 Your Strengths</h3>
+            <h3> Your Strengths</h3>
             <div id="strengthsList"></div>
         </div>
         
         <div class="insights-card">
-            <h3>🎯 Areas to Improve</h3>
+            <h3> Areas to Improve</h3>
             <div id="weaknessesList"></div>
         </div>
     </div>
     
     <!-- Next Steps Section -->
     <div id="nextStepsSection" class="next-steps-section" style="display: none;">
-        <h2>🚀 Your Learning Path</h2>
+        <h2> Your Learning Path</h2>
         
         <div class="stats-preview">
             <div class="stat-item">
@@ -102,7 +102,7 @@
         
         <div style="margin-top: 40px; text-align: center;">
             <button class="btn btn-primary btn-large" onclick="generateRoadmap()">
-                🗺️ Generate Your Learning Roadmap
+                 Generate Your Learning Roadmap
             </button>
         </div>
     </div>
@@ -484,32 +484,32 @@ function displayRoadmap(roadmap) {
                 <div class="week-item">
                     <div class="week-content">
                         <div class="week-number">Week ${week.week || index + 1} of ${roadmap.total_weeks}</div>
-                        ${week.weak_focus ? '<span class="focus-badge">🎯 Focus on Weak Areas</span>' : ''}
+                        ${week.weak_focus ? '<span class="focus-badge"> Focus on Weak Areas</span>' : ''}
                         <div class="week-title">${week.title || 'Week ' + (index + 1)}</div>
                         <div class="week-tagline">${week.tagline || ''}</div>
                         <div class="week-motivation">"${week.motivation || 'Keep pushing forward!'}"</div>
                         
-                        <div class="week-section-title">📚 Focus Areas</div>
+                        <div class="week-section-title"> Focus Areas</div>
                         <ul class="week-list">
                             ${focusAreas.length > 0 ? focusAreas.map(area => `<li>${area}</li>`).join('') : '<li>Core learning</li>'}
                         </ul>
                         
-                        <div class="week-section-title">🎯 Learning Objectives</div>
+                        <div class="week-section-title"> Learning Objectives</div>
                         <ul class="week-list">
                             ${objectives.length > 0 ? objectives.map(obj => `<li>${obj}</li>`).join('') : '<li>Progress your skills</li>'}
                         </ul>
                         
-                        <div class="week-section-title">📖 Resources</div>
+                        <div class="week-section-title"> Resources</div>
                         <ul class="week-list">
                             ${resources.length > 0 ? resources.map(r => `<li><strong>${r.title || 'Resource'}</strong> (${r.time_estimate || '2 hours'})<br/><span style="color: #a0aec0; font-size: 13px;">${r.description || 'Learning material'}</span></li>`).join('') : '<li>Study materials provided</li>'}
                         </ul>
                         
-                        <div class="week-section-title">✏️ Daily Schedule</div>
+                        <div class="week-section-title"> Daily Schedule</div>
                         <ul class="week-list">
                             ${tasks.length > 0 ? tasks.map(task => `<li>${task}</li>`).join('') : '<li>Follow your learning schedule</li>'}
                         </ul>
                         
-                        <div class="week-section-title">🏁 Weekly Milestone</div>
+                        <div class="week-section-title"> Weekly Milestone</div>
                         <div style="background: #e6fffa; padding: 12px; border-radius: 6px; color: #234e52; font-weight: 500;">
                             ${week.milestone || 'Complete this week successfully'}
                         </div>
@@ -523,7 +523,7 @@ function displayRoadmap(roadmap) {
         </div>
         
         <div class="milestones-section">
-            <div class="milestones-title">🏆 Key Checkpoints</div>
+            <div class="milestones-title"> Key Checkpoints</div>
     `;
     
     // Display milestones
@@ -545,7 +545,7 @@ function displayRoadmap(roadmap) {
         </div>
         
         <div class="tips-section">
-            <div class="tips-title">💡 Success Tips for Your Journey</div>
+            <div class="tips-title"> Success Tips for Your Journey</div>
             <div class="tips-grid">
     `;
     
@@ -565,12 +565,12 @@ function displayRoadmap(roadmap) {
         </div>
         
         <div class="cta-section">
-            <div class="cta-text">🚀 You're Ready to Transform!</div>
+            <div class="cta-text"> You're Ready to Transform!</div>
             <p style="color: #718096; margin-bottom: 20px;">
                 In the next ${roadmap.total_weeks} weeks, you'll go from ${roadmap.skill_level} to proficient in ${(roadmap.focus_areas && roadmap.focus_areas.length > 0) ? roadmap.focus_areas.join(', ') : 'this skill'}.
             </p>
             <button class="btn btn-primary btn-large" onclick="closeRoadmap()">
-                Start Your Journey! 🎯
+                Start Your Journey! 
             </button>
         </div>
     `;
