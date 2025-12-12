@@ -22,5 +22,13 @@ urlpatterns = [
     path('api/assessment/<int:assessment_id>/results/', views.get_results, name='api_results'),
     path('api/assessment/start-custom/', views.start_assessment, name='api_start_assessment'),
     path('api/roadmap/generate/', views.generate_roadmap, name='api_generate_roadmap'),
+    
+    # Roadmap & Assignment tracking
+    path('roadmap/', views.roadmap_page, name='roadmap'),
+    path('api/roadmap/topic-detail/', views.topic_detail_api, name='api_topic_detail'),
+    path('api/assignments/user/', views.user_assignments_api, name='api_user_assignments'),
+    path('api/assignments/submit/', views.submit_assignment_api, name='api_submit_assignment'),
+    path('api/assignments/progress/', views.user_progress_api, name='api_user_progress'),
+    path('api/profile/update-time/', views.update_learning_time, name='api_update_time'),
 
 ]

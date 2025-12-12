@@ -19,11 +19,13 @@
 
     <div class="question-container">
         <div class="question-card" id="questionCard"></div>
-        
+
         <div class="navigation-buttons">
-            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" style="display: none;">← Previous</button>
+            <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" style="display: none;">←
+                Previous</button>
             <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next →</button>
-            <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display: none;">Submit Assessment</button>
+            <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display: none;">Submit
+                Assessment</button>
         </div>
     </div>
 </div>
@@ -32,76 +34,76 @@
 
 {% block extra_js %}
 <script>
-// Check authentication
-if (!localStorage.getItem('token')) {
-    window.location.href = '/login/';
-}
+    // Check authentication
+    if (!localStorage.getItem('token')) {
+        window.location.href = '/login/';
+    }
 
-let quizManager;
-let assessmentId;
+    let quizManager;
+    let assessmentId;
 
-async function initializeAssessment() {
-    try {
-        console.log('Initializing assessment...');
-        
-        const quizDataStr = sessionStorage.getItem('quiz_data');
-        const assessmentIdStr = sessionStorage.getItem('assessment_id');
-        
-        console.log('Quiz data from storage:', quizDataStr ? 'exists' : 'missing');
-        console.log('Assessment ID from storage:', assessmentIdStr);
-        
-        if (!quizDataStr || !assessmentIdStr) {
-            console.error('Missing quiz_data or assessment_id');
-            document.body.innerHTML = `
+    async function initializeAssessment() {
+        try {
+            console.log('Initializing assessment...');
+
+            const quizDataStr = sessionStorage.getItem('quiz_data');
+            const assessmentIdStr = sessionStorage.getItem('assessment_id');
+
+            console.log('Quiz data from storage:', quizDataStr ? 'exists' : 'missing');
+            console.log('Assessment ID from storage:', assessmentIdStr);
+
+            if (!quizDataStr || !assessmentIdStr) {
+                console.error('Missing quiz_data or assessment_id');
+                document.body.innerHTML = `
                 <div style="padding: 40px; text-align: center;">
                     <h2>Error: Assessment data not found</h2>
                     <p>Please go back and try again.</p>
                     <button onclick="window.location.href='/courses/'">Back to Courses</button>
                 </div>
             `;
-            return;
-        }
+                return;
+            }
 
-        const quizData = JSON.parse(quizDataStr);
-        assessmentId = parseInt(assessmentIdStr);
-        
-        console.log('Quiz data parsed:', quizData);
-        console.log('Assessment ID:', assessmentId);
-        console.log('Number of questions:', quizData.questions?.length);
-        
-        if (!quizData.questions || quizData.questions.length === 0) {
-            throw new Error('No questions in quiz data');
-        }
+            const quizData = JSON.parse(quizDataStr);
+            assessmentId = parseInt(assessmentIdStr);
 
-        quizManager = new QuizManager(quizData);
-        console.log('Quiz manager created');
-        
-        quizManager.startTimer(updateTimer);
-        console.log('Timer started');
-        
-        displayQuestion();
-        console.log('Question displayed');
-        
-        updateNavigation();
-        console.log('Navigation updated');
-        
-    } catch (error) {
-        console.error('Assessment initialization error:', error);
-        document.body.innerHTML = `
+            console.log('Quiz data parsed:', quizData);
+            console.log('Assessment ID:', assessmentId);
+            console.log('Number of questions:', quizData.questions?.length);
+
+            if (!quizData.questions || quizData.questions.length === 0) {
+                throw new Error('No questions in quiz data');
+            }
+
+            quizManager = new QuizManager(quizData);
+            console.log('Quiz manager created');
+
+            quizManager.startTimer(updateTimer);
+            console.log('Timer started');
+
+            displayQuestion();
+            console.log('Question displayed');
+
+            updateNavigation();
+            console.log('Navigation updated');
+
+        } catch (error) {
+            console.error('Assessment initialization error:', error);
+            document.body.innerHTML = `
             <div style="padding: 40px; text-align: center; color: red;">
                 <h2>Error: ${error.message}</h2>
                 <p>Please check the browser console for more details.</p>
                 <button onclick="window.location.href='/courses/'">Back to Courses</button>
             </div>
         `;
+        }
     }
-}
 
-function displayQuestion() {
-    const question = quizManager.getCurrentQuestion();
-    const container = document.getElementById('questionCard');
-    
-    container.innerHTML = `
+    function displayQuestion() {
+        const question = quizManager.getCurrentQuestion();
+        const container = document.getElementById('questionCard');
+
+        container.innerHTML = `
         <div class="question-meta">
             <span class="difficulty-badge ${question.difficulty}">${question.difficulty.toUpperCase()}</span>
             <span class="topic-label">${question.topic}</span>
@@ -117,17 +119,17 @@ function displayQuestion() {
                 .join('')}
         </div>
     `;
-    
-    document.getElementById('questionNumber').textContent = 
-        `Question ${quizManager.currentIndex + 1} of ${quizManager.getTotalQuestions()}`;
-    document.getElementById('progressBar').style.width = quizManager.getProgress() + '%';
-}
 
-function createSingleOption(letter, text, questionId) {
-    const userAnswer = quizManager.getAnswer(questionId);
-    const isSelected = userAnswer === letter;
-    
-    return `
+        document.getElementById('questionNumber').textContent =
+            `Question ${quizManager.currentIndex + 1} of ${quizManager.getTotalQuestions()}`;
+        document.getElementById('progressBar').style.width = quizManager.getProgress() + '%';
+    }
+
+    function createSingleOption(letter, text, questionId) {
+        const userAnswer = quizManager.getAnswer(questionId);
+        const isSelected = userAnswer === letter;
+
+        return `
         <label class="option-card ${isSelected ? 'selected' : ''}">
             <input type="radio" name="option_${questionId}" value="${letter}" 
                    onchange="selectOption('${questionId}', '${letter}')" 
@@ -138,96 +140,101 @@ function createSingleOption(letter, text, questionId) {
             </span>
         </label>
     `;
-}
+    }
 
-function selectOption(questionId, answer) {
-    quizManager.selectAnswer(questionId, answer);
-    displayQuestion();
-}
-
-function nextQuestion() {
-    if (quizManager.currentIndex < quizManager.getTotalQuestions() - 1) {
-        quizManager.currentIndex++;
+    function selectOption(questionId, answer) {
+        quizManager.selectAnswer(questionId, answer);
         displayQuestion();
-        updateNavigation();
     }
-}
 
-function previousQuestion() {
-    if (quizManager.currentIndex > 0) {
-        quizManager.currentIndex--;
-        displayQuestion();
-        updateNavigation();
-    }
-}
-
-function updateNavigation() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    
-    prevBtn.style.display = quizManager.currentIndex > 0 ? 'block' : 'none';
-    
-    if (quizManager.currentIndex === quizManager.getTotalQuestions() - 1) {
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'block';
-    } else {
-        nextBtn.style.display = 'block';
-        submitBtn.style.display = 'none';
-    }
-}
-
-function updateTimer(timeString) {
-    const timerDisplay = document.getElementById('timerDisplay');
-    if (timerDisplay) {
-        timerDisplay.textContent = timeString;
-    }
-}
-
-async function submitQuiz() {
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-    
-    quizManager.stopTimer();
-    
-    try {
-        const response = await fetch('/api/assessment/submit/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                assessment_id: parseInt(assessmentId),
-                user_answers: quizManager.getFormattedAnswers(),
-                time_taken: quizManager.getTotalTime()
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to submit assessment');
+    function nextQuestion() {
+        if (quizManager.currentIndex < quizManager.getTotalQuestions() - 1) {
+            quizManager.currentIndex++;
+            displayQuestion();
+            updateNavigation();
         }
-        
-        console.log('Assessment Response:', data);
-        sessionStorage.setItem('results_data', JSON.stringify(data));
-        sessionStorage.setItem('assessment_id', assessmentId);
-        
-        setTimeout(() => {
-            window.location.href = '/results/';
-        }, 1000);
-        
-    } catch (error) {
-        alert('Error submitting assessment: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Assessment';
-        console.error('Submit error:', error);
     }
-}
 
-// Initialize on page load
-window.addEventListener('load', initializeAssessment);
+    function previousQuestion() {
+        if (quizManager.currentIndex > 0) {
+            quizManager.currentIndex--;
+            displayQuestion();
+            updateNavigation();
+        }
+    }
+
+    function updateNavigation() {
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+
+        prevBtn.style.display = quizManager.currentIndex > 0 ? 'block' : 'none';
+
+        if (quizManager.currentIndex === quizManager.getTotalQuestions() - 1) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'block';
+        } else {
+            nextBtn.style.display = 'block';
+            submitBtn.style.display = 'none';
+        }
+    }
+
+    function updateTimer(timeString) {
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (timerDisplay) {
+            timerDisplay.textContent = timeString;
+        }
+    }
+
+    async function submitQuiz() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        quizManager.stopTimer();
+
+        try {
+            const response = await fetch('/api/assessment/submit/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    assessment_id: parseInt(assessmentId),
+                    user_answers: quizManager.getFormattedAnswers(),
+                    time_taken: quizManager.getTotalTime()
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to submit assessment');
+            }
+
+            console.log('Assessment Response:', data);
+            sessionStorage.setItem('results_data', JSON.stringify(data));
+            sessionStorage.setItem('assessment_id', assessmentId);
+
+            // Store assessment ID in localStorage for roadmap generation
+            localStorage.setItem('currentAssessmentId', assessmentId);
+            localStorage.setItem('hasCompletedAssessment', 'true');
+
+            setTimeout(() => {
+                window.location.href = '/results/';
+            }, 1000);
+
+
+        } catch (error) {
+            alert('Error submitting assessment: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Assessment';
+            console.error('Submit error:', error);
+        }
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', initializeAssessment);
 </script>
 {% endblock %}

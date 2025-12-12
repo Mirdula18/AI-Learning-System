@@ -8,23 +8,19 @@
         <h2>What Do You Want to Learn?</h2>
         <p>Type any course or topic you want to master</p>
     </div>
-    
+
     <div class="custom-course-section">
         <div class="custom-course-card">
             <h3> Create Custom Course</h3>
             <p>Enter any course or topic you'd like to learn about</p>
-            
+
             <div class="custom-input-group">
-                <input 
-                    type="text" 
-                    id="customCourse" 
+                <input type="text" id="customCourse"
                     placeholder="e.g., Web Development, AI, Data Science, Python, React, etc..."
-                    class="custom-course-input"
-                    autocomplete="off"
-                >
+                    class="custom-course-input" autocomplete="off">
                 <button class="btn btn-primary" onclick="startCustomCourse()">Start Learning</button>
             </div>
-            
+
             <div id="suggestions" class="suggestions-list">
                 <p class="suggestions-title">Popular Topics:</p>
                 <div class="suggestion-tags">
@@ -36,11 +32,12 @@
                     <span class="suggestion-tag" onclick="setCustomCourse('Python')">Python</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('JavaScript')">JavaScript</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('SQL')">SQL</span>
-                    <span class="suggestion-tag" onclick="setCustomCourse('Artificial Intelligence')">Artificial Intelligence</span>
+                    <span class="suggestion-tag" onclick="setCustomCourse('Artificial Intelligence')">Artificial
+                        Intelligence</span>
                     <span class="suggestion-tag" onclick="setCustomCourse('Cloud Computing')">Cloud Computing</span>
                 </div>
             </div>
-            
+
             <div id="errorMessage" class="error-message" style="display: none;"></div>
         </div>
     </div>
@@ -56,89 +53,122 @@
 
 {% block extra_js %}
 <script>
-// Check authentication
-if (!localStorage.getItem('token')) {
-    window.location.href = '/login/';
-}
-
-function setCustomCourse(courseName) {
-    document.getElementById('customCourse').value = courseName;
-    document.getElementById('customCourse').focus();
-}
-
-async function startCustomCourse() {
-    const courseName = document.getElementById('customCourse').value.trim();
-    const errorDiv = document.getElementById('errorMessage');
-    
-    // Validate input
-    if (!courseName || courseName.length < 2) {
-        errorDiv.textContent = ' Please enter a valid course/topic name (at least 2 characters)';
-        errorDiv.style.display = 'block';
-        return;
+    // Check authentication
+    if (!localStorage.getItem('token')) {
+        window.location.href = '/login/';
     }
-    
-    if (courseName.length > 100) {
-        errorDiv.textContent = ' Course name too long (max 100 characters)';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    // Hide error and show loading
-    errorDiv.style.display = 'none';
-    const overlay = document.getElementById('transitionOverlay');
-    overlay.style.display = 'flex';
-    
-    try {
-        console.log('Starting assessment for:', courseName);
-        
-        const response = await fetch('/api/assessment/start-custom/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ 
-                course_name: courseName
-            })
-        });
-        
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Response data:', data);
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to start assessment');
+
+    // Check if user has already completed an assessment
+    window.addEventListener('load', function () {
+        const hasCompletedAssessment = localStorage.getItem('hasCompletedAssessment');
+        const hasRoadmap = localStorage.getItem('latestRoadmap');
+
+        if (hasCompletedAssessment && hasRoadmap) {
+            // Show option to view roadmap or take new assessment
+            const coursesHeader = document.querySelector('.courses-header');
+            coursesHeader.innerHTML = `
+            <h2>Welcome Back!</h2>
+            <p>You have already completed an assessment. What would you like to do?</p>
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="window.location.href='/roadmap/'">
+                    📚 View My Roadmap
+                </button>
+                <button class="btn btn-secondary" onclick="takeNewAssessment()">
+                    🔄 Take New Assessment
+                </button>
+            </div>
+        `;
         }
-        
-        if (!data.quiz || !data.quiz.questions) {
-            throw new Error('No quiz data in response');
-        }
-        
-        // Store data
-        console.log('Storing quiz data...');
-        sessionStorage.setItem('quiz_data', JSON.stringify(data.quiz));
-        sessionStorage.setItem('assessment_id', data.quiz.assessment_id);
-        
-        console.log('Quiz data stored, redirecting...');
-        
-        // Redirect to assessment page
-        setTimeout(() => {
-            window.location.href = '/assessment/';
-        }, 1000);
-        
-    } catch (error) {
-        console.error('Error caught:', error);
-        overlay.style.display = 'none';
-        errorDiv.textContent = ` ${error.message}`;
-        errorDiv.style.display = 'block';
-    }
-}
+    });
 
-// Allow Enter key to start
-document.getElementById('customCourse').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        startCustomCourse();
+    function takeNewAssessment() {
+        // User wants to take a new assessment, reset and continue
+        const coursesHeader = document.querySelector('.courses-header');
+        coursesHeader.innerHTML = `
+        <h2>What Do You Want to Learn?</h2>
+        <p>Type any course or topic you want to master</p>
+    `;
     }
-});
+
+
+    function setCustomCourse(courseName) {
+        document.getElementById('customCourse').value = courseName;
+        document.getElementById('customCourse').focus();
+    }
+
+    async function startCustomCourse() {
+        const courseName = document.getElementById('customCourse').value.trim();
+        const errorDiv = document.getElementById('errorMessage');
+
+        // Validate input
+        if (!courseName || courseName.length < 2) {
+            errorDiv.textContent = ' Please enter a valid course/topic name (at least 2 characters)';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (courseName.length > 100) {
+            errorDiv.textContent = ' Course name too long (max 100 characters)';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Hide error and show loading
+        errorDiv.style.display = 'none';
+        const overlay = document.getElementById('transitionOverlay');
+        overlay.style.display = 'flex';
+
+        try {
+            console.log('Starting assessment for:', courseName);
+
+            const response = await fetch('/api/assessment/start-custom/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    course_name: courseName
+                })
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to start assessment');
+            }
+
+            if (!data.quiz || !data.quiz.questions) {
+                throw new Error('No quiz data in response');
+            }
+
+            // Store data
+            console.log('Storing quiz data...');
+            sessionStorage.setItem('quiz_data', JSON.stringify(data.quiz));
+            sessionStorage.setItem('assessment_id', data.quiz.assessment_id);
+
+            console.log('Quiz data stored, redirecting...');
+
+            // Redirect to assessment page
+            setTimeout(() => {
+                window.location.href = '/assessment/';
+            }, 1000);
+
+        } catch (error) {
+            console.error('Error caught:', error);
+            overlay.style.display = 'none';
+            errorDiv.textContent = ` ${error.message}`;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    // Allow Enter key to start
+    document.getElementById('customCourse').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            startCustomCourse();
+        }
+    });
 </script>
 {% endblock %}

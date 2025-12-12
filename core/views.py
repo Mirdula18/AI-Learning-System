@@ -2,12 +2,16 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
+from django.db import models
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework import status
-from .models import LearnerProfile, Course, Assessment, SkillProfile
+from .models import (
+    LearnerProfile, Course, Assessment, SkillProfile,
+    TopicResource, Assignment, AssignmentSubmission
+)
 from .serializers import *
 from .quiz_generator import generate_assessment_quiz
 from .evaluator import evaluate_assessment
@@ -401,6 +405,27 @@ def generate_roadmap(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+        # ⭐ AUTOMATIC RESOURCE GENERATION ⭐
+        # Generate learning resources for all topics in the roadmap
+        try:
+            from .resource_generator import generate_resources_for_roadmap
+            
+            logger.info(f"Starting automatic resource generation for roadmap topics...")
+            resource_stats = generate_resources_for_roadmap(roadmap_data, skill_level)
+            
+            logger.info(f"Resource generation complete: {resource_stats}")
+            
+            # Add resource stats to roadmap data
+            roadmap_data['resource_generation_stats'] = resource_stats
+            
+        except Exception as resource_error:
+            # Don't fail the entire roadmap if resource generation fails
+            logger.error(f"Resource generation failed: {str(resource_error)}")
+            roadmap_data['resource_generation_stats'] = {
+                'error': 'Resource generation failed',
+                'message': str(resource_error)
+            }
+        
         # Store roadmap (optional - for future reference)
         assessment.roadmap_data = roadmap_data
         assessment.save()
@@ -424,3 +449,293 @@ def generate_roadmap(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+# ==================== ROADMAP & ASSIGNMENT TRACKING VIEWS ====================
+
+def roadmap_page(request):
+    """Display personalized learning roadmap"""
+    return render(request, 'roadmap.html')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def topic_detail_api(request):
+    """
+    Get topic details with resources and assignments
+    Filters out completed assignments for the current user
+    """
+    try:
+        from .models import TopicResource, Assignment, AssignmentSubmission
+        
+        topic_name = request.query_params.get('topic')
+        
+        if not topic_name:
+            return Response(
+                {'error': 'Topic name required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get resources for this topic
+        resources = TopicResource.objects.filter(topic=topic_name)
+        
+        # Get all assignments for this topic
+        all_assignments = Assignment.objects.filter(topic=topic_name)
+        
+        # Filter out completed assignments for this user
+        completed_assignment_ids = AssignmentSubmission.objects.filter(
+            user=request.user,
+            status='completed'
+        ).values_list('assignment_id', flat=True)
+        
+        # Only show assignments that are not completed
+        pending_assignments = all_assignments.exclude(id__in=completed_assignment_ids)
+        
+        # Serialize data
+        resources_data = TopicResourceSerializer(resources, many=True).data
+        assignments_data = AssignmentSerializer(
+            pending_assignments,
+            many=True,
+            context={'request': request}
+        ).data
+        
+        # Calculate completion stats
+        total_assignments = all_assignments.count()
+        completed_count = len(completed_assignment_ids)
+        completion_percentage = (completed_count / total_assignments * 100) if total_assignments > 0 else 0
+        
+        response_data = {
+            'topic_name': topic_name,
+            'resources': resources_data,
+            'assignments': assignments_data,
+            'completion_stats': {
+                'total': total_assignments,
+                'completed': completed_count,
+                'pending': total_assignments - completed_count,
+                'percentage': round(completion_percentage, 2)
+            }
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Topic detail error: {str(e)}")
+        return Response(
+            {'error': 'Failed to retrieve topic details'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_assignments_api(request):
+    """
+    Get all assignments for the current user with their submission status
+    Excludes completed assignments by default
+    """
+    try:
+        from .models import Assignment, AssignmentSubmission
+        
+        include_completed = request.query_params.get('include_completed', 'false').lower() == 'true'
+        
+        # Get all assignments
+        all_assignments = Assignment.objects.all()
+        
+        if not include_completed:
+            # Filter out completed assignments
+            completed_assignment_ids = AssignmentSubmission.objects.filter(
+                user=request.user,
+                status='completed'
+            ).values_list('assignment_id', flat=True)
+            
+            assignments = all_assignments.exclude(id__in=completed_assignment_ids)
+        else:
+            assignments = all_assignments
+        
+        # Serialize with user submission status
+        serializer = AssignmentSerializer(
+            assignments,
+            many=True,
+            context={'request': request}
+        )
+        
+        return Response({
+            'assignments': serializer.data,
+            'total_count': assignments.count()
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"User assignments error: {str(e)}")
+        return Response(
+            {'error': 'Failed to retrieve assignments'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_assignment_api(request):
+    """
+    Submit an assignment
+    Creates or updates AssignmentSubmission record
+    """
+    try:
+        from .models import Assignment, AssignmentSubmission
+        
+        assignment_id = request.data.get('assignment_id')
+        submission_text = request.data.get('submission_text', '').strip()
+        submission_link = request.data.get('submission_link', '').strip()
+        
+        if not assignment_id:
+            return Response(
+                {'error': 'Assignment ID required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate at least one submission method
+        if not submission_text and not submission_link:
+            return Response(
+                {'error': 'Please provide either submission text or a link'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get assignment
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+        except Assignment.DoesNotExist:
+            return Response(
+                {'error': 'Assignment not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Create or update submission
+        submission, created = AssignmentSubmission.objects.update_or_create(
+            user=request.user,
+            assignment=assignment,
+            defaults={
+                'submission_text': submission_text,
+                'submission_link': submission_link,
+                'status': 'submitted',
+                'submitted_at': timezone.now()
+            }
+        )
+        
+        logger.info(f"Assignment {assignment_id} submitted by user {request.user.id}")
+        
+        serializer = AssignmentSubmissionSerializer(submission)
+        
+        return Response({
+            'message': 'Assignment submitted successfully',
+            'submission': serializer.data
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Assignment submission error: {str(e)}")
+        return Response(
+            {'error': 'Failed to submit assignment'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_progress_api(request):
+    """
+    Get overall user progress across all assignments
+    Returns statistics and recent submissions
+    """
+    try:
+        from .models import Assignment, AssignmentSubmission
+        
+        user = request.user
+        
+        # Get all assignments
+        total_assignments = Assignment.objects.count()
+        
+        # Get user submissions
+        user_submissions = AssignmentSubmission.objects.filter(user=user)
+        
+        # Calculate stats
+        completed_count = user_submissions.filter(status='completed').count()
+        submitted_count = user_submissions.filter(status='submitted').count()
+        graded_count = user_submissions.filter(status='graded').count()
+        
+        # Calculate total score
+        total_score = user_submissions.filter(
+            score__isnull=False
+        ).aggregate(total=models.Sum('score'))['total'] or 0
+        
+        # Get recent submissions
+        recent_submissions = user_submissions.order_by('-updated_at')[:5]
+        recent_data = AssignmentSubmissionSerializer(recent_submissions, many=True).data
+        
+        # Calculate completion percentage
+        completion_percentage = (completed_count / total_assignments * 100) if total_assignments > 0 else 0
+        
+        # Get total time spent
+        total_time_spent = user.profile.total_time_spent if hasattr(user, 'profile') else 0
+        
+        return Response({
+            'total_assignments': total_assignments,
+            'completed': completed_count,
+            'submitted': submitted_count,
+            'graded': graded_count,
+            'pending': total_assignments - completed_count - submitted_count - graded_count,
+            'completion_percentage': round(completion_percentage, 2),
+            'total_score': total_score,
+            'total_time_spent': total_time_spent,
+            'recent_submissions': recent_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"User progress error: {str(e)}")
+        return Response(
+            {'error': 'Failed to retrieve progress'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_learning_time(request):
+    """
+    Update user's total learning time
+    Expects 'increment' in body (minutes), defaults to 1
+    """
+    try:
+        user = request.user
+        profile = hasattr(user, 'profile') and user.profile or None
+        
+        if not profile:
+            # Create profile if it doesn't exist (fallback)
+            profile = LearnerProfile.objects.create(
+                user=user,
+                learning_goal='explore',
+                preferred_time='flexible'
+            )
+        
+        increment = int(request.data.get('increment', 1))
+        
+        # Ensure increment is reasonable (e.g., <= 60 minutes per call)
+        if increment > 60:
+            increment = 60
+        if increment < 0:
+            increment = 0
+            
+        profile.total_time_spent += increment
+        profile.save()
+        
+        return Response({
+            'status': 'success',
+            'total_time_spent': profile.total_time_spent,
+            'message': f'Added {increment} minutes'
+        })
+        
+    except ValueError:
+        return Response(
+            {'error': 'Invalid increment value'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Error updating time: {str(e)}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

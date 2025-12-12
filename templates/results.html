@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="results-container">
-    
+
     <!-- Score Section -->
     <div id="scoreHero" class="score-hero">
         <h1>Your Assessment Results</h1>
-        
+
         <div class="score-circle">
             <svg class="score-svg" viewBox="0 0 200 200">
                 <defs>
@@ -25,16 +25,16 @@
                 <span class="score-label" id="scoreFraction">0/10 Correct</span>
             </div>
         </div>
-        
+
         <div id="skillBadge" class="skill-level-badge"></div>
-        
+
         <p class="personal-message" id="personalMessage"></p>
     </div>
-    
+
     <!-- Performance Section -->
     <div id="performanceSection" class="performance-section" style="display: none;">
         <h2> Performance Breakdown</h2>
-        
+
         <div class="difficulty-breakdown">
             <div class="breakdown-item">
                 <div class="breakdown-header">
@@ -45,7 +45,7 @@
                     <div class="progress-fill beginner" id="beginnerProgress" style="width: 0%"></div>
                 </div>
             </div>
-            
+
             <div class="breakdown-item">
                 <div class="breakdown-header">
                     <span class="difficulty-label">Intermediate Questions</span>
@@ -55,7 +55,7 @@
                     <div class="progress-fill intermediate" id="intermediateProgress" style="width: 0%"></div>
                 </div>
             </div>
-            
+
             <div class="breakdown-item">
                 <div class="breakdown-header">
                     <span class="difficulty-label">Advanced Questions</span>
@@ -67,24 +67,24 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Insights Section -->
     <div id="insightsGrid" class="insights-grid" style="display: none;">
         <div class="insights-card">
             <h3> Your Strengths</h3>
             <div id="strengthsList"></div>
         </div>
-        
+
         <div class="insights-card">
             <h3> Areas to Improve</h3>
             <div id="weaknessesList"></div>
         </div>
     </div>
-    
+
     <!-- Next Steps Section -->
     <div id="nextStepsSection" class="next-steps-section" style="display: none;">
         <h2> Your Learning Path</h2>
-        
+
         <div class="stats-preview">
             <div class="stat-item">
                 <span class="stat-number" id="estimatedWeeks">8</span>
@@ -99,20 +99,23 @@
                 <span class="stat-label">Questions Attempted</span>
             </div>
         </div>
-        
+
         <div style="margin-top: 40px; text-align: center;">
             <button class="btn btn-primary btn-large" onclick="generateRoadmap()">
-                 Generate Your Learning Roadmap
+                Generate Your Learning Roadmap
             </button>
         </div>
     </div>
-    
+
 </div>
 
 <!-- Roadmap Modal -->
-<div id="roadmapModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto;">
-    <div style="background: white; margin: 20px auto; padding: 40px; border-radius: 8px; max-width: 900px; margin-top: 50px;">
-        <button onclick="closeRoadmap()" style="float: right; background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+<div id="roadmapModal"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto;">
+    <div
+        style="background: white; margin: 20px auto; padding: 40px; border-radius: 8px; max-width: 900px; margin-top: 50px;">
+        <button onclick="closeRoadmap()"
+            style="float: right; background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
         <div id="roadmapContent"></div>
     </div>
 </div>
@@ -121,92 +124,114 @@
 
 {% block extra_js %}
 <script>
-// Check authentication
-if (!localStorage.getItem('token')) {
-    window.location.href = '/login/';
-}
+    // Check authentication
+    if (!localStorage.getItem('token')) {
+        window.location.href = '/login/';
+    }
 
-async function initializeResults() {
-    try {
-        const resultsData = JSON.parse(sessionStorage.getItem('results_data') || '{}');
-        
-        console.log('Results Data:', resultsData);
-        
-        if (!resultsData || !resultsData.evaluation_results) {
-            console.error('No results data found');
-            document.getElementById('scoreHero').innerHTML = 
-                '<p style="color: red;">No results data found. Please go back and take the assessment.</p>';
+    async function initializeResults() {
+        try {
+            const resultsData = JSON.parse(sessionStorage.getItem('results_data') || '{}');
+
+            console.log('Results Data:', resultsData);
+
+            if (!resultsData || !resultsData.evaluation_results) {
+                console.error('No results data found');
+                document.getElementById('scoreHero').innerHTML =
+                    '<p style="color: red;">No results data found. Please go back and take the assessment.</p>';
+                return;
+            }
+
+            const manager = new ResultsManager(resultsData);
+            await manager.render();
+
+        } catch (error) {
+            console.error('Results initialization error:', error);
+        }
+    }
+
+    async function generateRoadmap() {
+        const assessmentId = sessionStorage.getItem('assessment_id');
+        const token = localStorage.getItem('token');
+
+        if (!assessmentId) {
+            alert('Assessment ID not found');
             return;
         }
-        
-        const manager = new ResultsManager(resultsData);
-        await manager.render();
-        
-    } catch (error) {
-        console.error('Results initialization error:', error);
-    }
-}
 
-async function generateRoadmap() {
-    const assessmentId = sessionStorage.getItem('assessment_id');
-    
-    if (!assessmentId) {
-        alert('Assessment ID not found');
-        return;
-    }
-    
-    const modal = document.getElementById('roadmapModal');
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    
-    const content = document.getElementById('roadmapContent');
-    content.innerHTML = '<div class="spinner"></div><p>Generating your personalized roadmap...</p>';
-    
-    try {
-        const response = await fetch('/api/roadmap/generate/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Token ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                assessment_id: parseInt(assessmentId)
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to generate roadmap');
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/login/';
+            return;
         }
-        
-        displayRoadmap(data.roadmap);
-        
-    } catch (error) {
-        content.innerHTML = `<div class="error-message" style="display: block;">Error: ${error.message}</div>`;
-        console.error('Roadmap error:', error);
-    }
-}
 
-function displayRoadmap(roadmap) {
-    const content = document.getElementById('roadmapContent');
-    const modal = document.getElementById('roadmapModal');
-    
-    // Safety checks for undefined/null values
-    if (!roadmap) {
-        content.innerHTML = '<p>Error loading roadmap</p>';
-        return;
+        // Show loading on button
+        const btn = event?.target;
+        const originalText = btn?.textContent;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '🔄 Generating Roadmap...';
+        }
+
+        try {
+            const response = await fetch('/api/roadmap/generate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${token}`
+                },
+                body: JSON.stringify({
+                    assessment_id: parseInt(assessmentId)
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate roadmap');
+            }
+
+            // Store roadmap in localStorage for roadmap page
+            localStorage.setItem('latestRoadmap', JSON.stringify(data.roadmap));
+            localStorage.setItem('currentAssessmentId', assessmentId);
+            localStorage.setItem('hasCompletedAssessment', 'true');
+
+            // Show success message and redirect
+            alert('✅ Roadmap generated successfully! Redirecting...');
+
+            // Redirect to roadmap page
+            window.location.href = '/roadmap/';
+
+        } catch (error) {
+            console.error('Roadmap error:', error);
+            alert(`Failed to generate roadmap: ${error.message}`);
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
     }
-    
-    roadmap.weeks = roadmap.weeks || [];
-    roadmap.milestones = roadmap.milestones || [];
-    roadmap.success_tips = roadmap.success_tips || [];
-    roadmap.focus_areas = roadmap.focus_areas || [];
-    roadmap.total_weeks = roadmap.total_weeks || 8;
-    roadmap.skill_level = roadmap.skill_level || 'beginner';
-    
-    let html = `
+
+
+    function displayRoadmap(roadmap) {
+        const content = document.getElementById('roadmapContent');
+        const modal = document.getElementById('roadmapModal');
+
+        // Safety checks for undefined/null values
+        if (!roadmap) {
+            content.innerHTML = '<p>Error loading roadmap</p>';
+            return;
+        }
+
+        roadmap.weeks = roadmap.weeks || [];
+        roadmap.milestones = roadmap.milestones || [];
+        roadmap.success_tips = roadmap.success_tips || [];
+        roadmap.focus_areas = roadmap.focus_areas || [];
+        roadmap.total_weeks = roadmap.total_weeks || 8;
+        roadmap.skill_level = roadmap.skill_level || 'beginner';
+
+        let html = `
         <style>
             .roadmap-header {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -471,16 +496,16 @@ function displayRoadmap(roadmap) {
         
         <div class="weeks-timeline">
     `;
-    
-    // Display weeks
-    if (roadmap.weeks && roadmap.weeks.length > 0) {
-        roadmap.weeks.forEach((week, index) => {
-            const focusAreas = (week.focus_areas && Array.isArray(week.focus_areas)) ? week.focus_areas : [];
-            const objectives = (week.learning_objectives && Array.isArray(week.learning_objectives)) ? week.learning_objectives : [];
-            const resources = (week.resources && Array.isArray(week.resources)) ? week.resources : [];
-            const tasks = (week.daily_tasks && Array.isArray(week.daily_tasks)) ? week.daily_tasks : [];
-            
-            html += `
+
+        // Display weeks
+        if (roadmap.weeks && roadmap.weeks.length > 0) {
+            roadmap.weeks.forEach((week, index) => {
+                const focusAreas = (week.focus_areas && Array.isArray(week.focus_areas)) ? week.focus_areas : [];
+                const objectives = (week.learning_objectives && Array.isArray(week.learning_objectives)) ? week.learning_objectives : [];
+                const resources = (week.resources && Array.isArray(week.resources)) ? week.resources : [];
+                const tasks = (week.daily_tasks && Array.isArray(week.daily_tasks)) ? week.daily_tasks : [];
+
+                html += `
                 <div class="week-item">
                     <div class="week-content">
                         <div class="week-number">Week ${week.week || index + 1} of ${roadmap.total_weeks}</div>
@@ -516,20 +541,20 @@ function displayRoadmap(roadmap) {
                     </div>
                 </div>
             `;
-        });
-    }
-    
-    html += `
+            });
+        }
+
+        html += `
         </div>
         
         <div class="milestones-section">
             <div class="milestones-title"> Key Checkpoints</div>
     `;
-    
-    // Display milestones
-    if (roadmap.milestones && roadmap.milestones.length > 0) {
-        roadmap.milestones.forEach(milestone => {
-            html += `
+
+        // Display milestones
+        if (roadmap.milestones && roadmap.milestones.length > 0) {
+            roadmap.milestones.forEach(milestone => {
+                html += `
                 <div class="milestone-item">
                     <div class="milestone-week">Week ${milestone.week || 1}</div>
                     <div class="milestone-content">
@@ -538,29 +563,29 @@ function displayRoadmap(roadmap) {
                     </div>
                 </div>
             `;
-        });
-    }
-    
-    html += `
+            });
+        }
+
+        html += `
         </div>
         
         <div class="tips-section">
             <div class="tips-title"> Success Tips for Your Journey</div>
             <div class="tips-grid">
     `;
-    
-    // Display tips
-    if (roadmap.success_tips && roadmap.success_tips.length > 0) {
-        roadmap.success_tips.forEach(tip => {
-            html += `
+
+        // Display tips
+        if (roadmap.success_tips && roadmap.success_tips.length > 0) {
+            roadmap.success_tips.forEach(tip => {
+                html += `
                 <div class="tip-card">
                     <p>${tip || 'Keep learning'}</p>
                 </div>
             `;
-        });
-    }
-    
-    html += `
+            });
+        }
+
+        html += `
             </div>
         </div>
         
@@ -574,21 +599,21 @@ function displayRoadmap(roadmap) {
             </button>
         </div>
     `;
-    
-    content.innerHTML = html;
-    
-    // Scroll to top of modal
-    setTimeout(() => {
-        modal.scrollTop = 0;
-        content.scrollTop = 0;
-    }, 100);
-}
 
-function closeRoadmap() {
-    document.getElementById('roadmapModal').style.display = 'none';
-}
+        content.innerHTML = html;
 
-// Initialize on page load
-window.addEventListener('load', initializeResults);
+        // Scroll to top of modal
+        setTimeout(() => {
+            modal.scrollTop = 0;
+            content.scrollTop = 0;
+        }, 100);
+    }
+
+    function closeRoadmap() {
+        document.getElementById('roadmapModal').style.display = 'none';
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', initializeResults);
 </script>
 {% endblock %}

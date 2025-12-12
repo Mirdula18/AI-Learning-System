@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Learning Roadmap - AdaptLearn{% endblock %}
+
+{% block content %}
+<div class="roadmap-container">
+    <div class="roadmap-header">
+        <h1 id="roadmapTitle">📚 Your Personalized Learning Roadmap</h1>
+        <p class="roadmap-subtitle" id="roadmapSubtitle">Track your progress and complete assignments for each topic</p>
+    </div>
+
+    <!-- Progress Overview -->
+    <div class="progress-overview" id="progressOverview">
+        <div class="progress-card">
+            <div class="progress-icon">📊</div>
+            <div class="progress-details">
+                <h3 id="completionPercentage">0%</h3>
+                <p>Overall Progress</p>
+            </div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-icon">✅</div>
+            <div class="progress-details">
+                <h3 id="completedCount">0</h3>
+                <p>Completed Assignments</p>
+            </div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-icon">📝</div>
+            <div class="progress-details">
+                <h3 id="pendingCount">0</h3>
+                <p>Pending Assignments</p>
+            </div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-icon">⭐</div>
+            <div class="progress-details">
+                <h3 id="totalScore">0</h3>
+                <p>Total Points</p>
+            </div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-icon">⏱️</div>
+            <div class="progress-details">
+                <h3 id="totalTime">0m</h3>
+                <p>Time Spent</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roadmap Topics -->
+    <div class="roadmap-topics" id="roadmapTopics">
+        <!-- Topics will be loaded dynamically -->
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading your roadmap...</p>
+        </div>
+    </div>
+
+    <!-- Assignment Submission Modal -->
+    <div class="modal" id="assignmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Assignment</h2>
+                <button class="close-btn" onclick="closeAssignmentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="assignment-info">
+                    <div class="info-badges">
+                        <span class="badge difficulty-badge" id="modalDifficulty">Medium</span>
+                        <span class="badge points-badge" id="modalPoints">100 Points</span>
+                        <span class="badge time-badge" id="modalTime">2 Hours</span>
+                    </div>
+                    <h3>Description</h3>
+                    <p id="modalDescription"></p>
+
+                    <h3>Instructions</h3>
+                    <div id="modalInstructions"></div>
+                </div>
+
+                <form id="assignmentForm" onsubmit="submitAssignment(event)">
+                    <input type="hidden" id="assignmentId" name="assignment_id">
+
+                    <div class="form-group">
+                        <label for="submissionText">Your Answer / Solution</label>
+                        <textarea id="submissionText" name="submission_text" rows="6"
+                            placeholder="Type your answer here..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="submissionLink">Or Submit a Link (GitHub, Google Drive, etc.)</label>
+                        <input type="url" id="submissionLink" name="submission_link"
+                            placeholder="https://github.com/yourusername/project">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeAssignmentModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="/static/js/roadmap.js?v=2"></script>
+{% endblock %}
