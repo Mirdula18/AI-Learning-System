@@ -291,13 +291,31 @@ def submit_assessment(request):
         assessment.completed_at = timezone.now()
         assessment.save()
         
-        logger.info(f"Assessment {assessment_id} submitted by user {user.id}")
+        # Create or Update SkillProfile
+        learner_profile_data = evaluation_results.get('learner_profile', {})
+        
+        SkillProfile.objects.update_or_create(
+            user=user,
+            assessment=assessment,
+            defaults={
+                'course': assessment.course,
+                'skill_level': learner_profile_data.get('skill_level', 'beginner'),
+                'confidence_score': learner_profile_data.get('confidence_score', 0),
+                'learning_pace': learner_profile_data.get('learning_pace', 'moderate'),
+                'strengths': learner_profile_data.get('strengths', []),
+                'weaknesses': learner_profile_data.get('weaknesses', []),
+                'estimated_weeks': learner_profile_data.get('estimated_weeks_to_proficiency', 8),
+                'raw_results': evaluation_results
+            }
+        )
+        
+        logger.info(f"Assessment {assessment_id} submitted and SkillProfile created for user {user.id}")
         
         return Response({
             'message': 'Assessment evaluated successfully',
             'assessment_id': assessment.id,
             'evaluation_results': evaluation_results,
-            'learner_profile': evaluation_results.get('learner_profile', {}),
+            'learner_profile': learner_profile_data,
             'overall_score': evaluation_results.get('overall_score', 0)
         }, status=status.HTTP_200_OK)
         
@@ -418,17 +436,23 @@ def generate_roadmap(request):
             # Add resource stats to roadmap data
             roadmap_data['resource_generation_stats'] = resource_stats
             
-        except Exception as resource_error:
+            # Save roadmap to SkillProfile
+            try:
+                skill_profile = SkillProfile.objects.get(assessment=assessment)
+                skill_profile.roadmap_data = roadmap_data
+                skill_profile.save()
+            except SkillProfile.DoesNotExist:
+                logger.warning(f"SkillProfile not found for assessment {assessment.id} while saving roadmap")
+            
+        except Exception as e:
             # Don't fail the entire roadmap if resource generation fails
-            logger.error(f"Resource generation failed: {str(resource_error)}")
+            logger.error(f"Resource generation failed: {str(e)}")
             roadmap_data['resource_generation_stats'] = {
                 'error': 'Resource generation failed',
-                'message': str(resource_error)
+                'message': str(e)
             }
+            roadmap_data['resource_generation_error'] = str(e)
         
-        # Store roadmap (optional - for future reference)
-        assessment.roadmap_data = roadmap_data
-        assessment.save()
         
         logger.info(f"Roadmap generated for user {user.id} - Topic: {topic}")
         
@@ -577,9 +601,11 @@ def submit_assignment_api(request):
     """
     Submit an assignment
     Creates or updates AssignmentSubmission record
+    Returns user's current level and achievements
     """
     try:
         from .models import Assignment, AssignmentSubmission
+        from datetime import timedelta
         
         assignment_id = request.data.get('assignment_id')
         submission_text = request.data.get('submission_text', '').strip()
@@ -621,11 +647,129 @@ def submit_assignment_api(request):
         
         logger.info(f"Assignment {assignment_id} submitted by user {request.user.id}")
         
+        # Get user's current skill level from most recent SkillProfile
+        skill_level = "beginner"
+        skill_description = "Keep learning!"
+        level_icon = "🌱"
+        
+        try:
+            latest_profile = SkillProfile.objects.filter(user=request.user).latest('created_at')
+            skill_level = latest_profile.skill_level
+            
+            # Map skill level to icon and description
+            level_info = {
+                'absolute_beginner': ('🌱', 'Just getting started!', 'You\'re building a strong foundation.'),
+                'beginner': ('🌿', 'Making Progress!', 'You\'re developing core skills.'),
+                'intermediate': ('🌟', 'Great Progress!', 'You\'re mastering key concepts.'),
+                'advanced': ('🚀', 'Expert Level!', 'Outstanding knowledge and skills!')
+            }
+            level_icon, level_title, skill_description = level_info.get(skill_level, ('🌟', 'Keep Going!', 'You\'re doing great!'))
+        except SkillProfile.DoesNotExist:
+            level_title = "Getting Started"
+        
+        # Calculate user stats
+        user_submissions = AssignmentSubmission.objects.filter(user=request.user)
+        completed_count = user_submissions.filter(status__in=['completed', 'graded']).count()
+        
+        # Calculate average score (only for graded submissions)
+        graded_submissions = user_submissions.filter(score__isnull=False)
+        avg_score = 0
+        if graded_submissions.exists():
+           avg_score = round(graded_submissions.aggregate(models.Avg('score'))['score__avg'] or 0)
+        
+        # Calculate streak (assignments submitted in consecutive days)
+        streak = 1  # Current submission counts
+        submissions_dates = user_submissions.filter(
+            submitted_at__isnull=False
+        ).order_by('-submitted_at').values_list('submitted_at', flat=True)
+        
+        if len(submissions_dates) > 1:
+            current_date = timezone.now().date()
+            for i, sub_date in enumerate(submissions_dates):
+                expected_date = current_date - timedelta(days=i)
+                if sub_date.date() == expected_date:
+                    streak = i + 1
+                else:
+                    break
+        
+        # Check for achievements
+        achievements = []
+        
+        # First submission
+        if completed_count == 1:
+            achievements.append({
+                'icon': '🎯',
+                'title': 'First Steps',
+                'description': 'Completed your first assignment!'
+            })
+        
+        # Milestone achievements
+        if completed_count == 5:
+            achievements.append({
+                'icon': '⭐',
+                'title': 'Consistent Learner',
+                'description': 'Completed 5 assignments!'
+            })
+        
+        if completed_count == 10:
+            achievements.append({
+                'icon': '🏆',
+                'title': 'Dedicated Student',
+                'description': 'Completed 10 assignments!'
+            })
+        
+        if completed_count == 25:
+            achievements.append({
+                'icon': '👑',
+                'title': 'Learning Master',
+                'description': 'Completed 25 assignments!'
+            })
+        
+        # Score-based achievements
+        if avg_score >= 90:
+            achievements.append({
+                'icon': '💎',
+                'title': 'Excellence',
+                'description': 'Maintaining 90%+ average!'
+            })
+        elif avg_score >= 80:
+            achievements.append({
+                'icon': '🌟',
+                'title': 'High Achiever',
+                'description': 'Maintaining 80%+ average!'
+            })
+        
+        # Streak achievements
+        if streak >= 7:
+            achievements.append({
+                'icon': '🔥',
+                'title': 'On Fire!',
+                'description': '7-day learning streak!'
+            })
+        elif streak >= 3:
+            achievements.append({
+                'icon': '💪',
+                'title': 'Building Momentum',
+                'description': '3-day learning streak!'
+            })
+        
         serializer = AssignmentSubmissionSerializer(submission)
         
         return Response({
             'message': 'Assignment submitted successfully',
-            'submission': serializer.data
+            'submission': serializer.data,
+            'user_level': {
+                'skill_level': skill_level,
+                'icon': level_icon,
+                'title': level_title,
+                'description': skill_description
+            },
+            'stats': {
+                'completed_assignments': completed_count,
+                'average_score': avg_score,
+                'current_streak': streak
+            },
+            'achievements': achievements
         }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
         
     except Exception as e:
@@ -737,5 +881,133 @@ def update_learning_time(request):
         logger.error(f"Error updating time: {str(e)}")
         return Response(
             {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_roadmaps(request):
+    """Get list of user's active roadmaps (courses) based on completed assessments"""
+    try:
+        # Get ALL completed assessments
+        assessments = Assessment.objects.filter(
+            user=request.user,
+            status='completed'
+        ).select_related('course').order_by('-completed_at')
+        
+        roadmaps = []
+        for assessment in assessments:
+            # Check/Create SkillProfile for self-healing
+            try:
+                skill_profile = SkillProfile.objects.get(assessment=assessment)
+            except SkillProfile.DoesNotExist:
+                # Create profile if missing but evaluation exists
+                if assessment.evaluation_results:
+                    eval_res = assessment.evaluation_results
+                    profile_data = eval_res.get('learner_profile', {})
+                    skill_profile = SkillProfile.objects.create(
+                        user=request.user,
+                        assessment=assessment,
+                        course=assessment.course,
+                        skill_level=profile_data.get('skill_level', 'beginner'),
+                        confidence_score=profile_data.get('confidence_score', 0),
+                        learning_pace=profile_data.get('learning_pace', 'moderate'),
+                        strengths=profile_data.get('strengths', []),
+                        weaknesses=profile_data.get('weaknesses', []),
+                        estimated_weeks=profile_data.get('estimated_weeks_to_proficiency', 8),
+                        raw_results=eval_res
+                    )
+                else:
+                    # Skip if no evaluation results (shouldn't happen for completed status)
+                    continue
+
+            course_name = assessment.custom_course_name or (assessment.course.title if assessment.course else 'Unknown Course')
+            roadmaps.append({
+                'id': assessment.id,
+                'title': course_name,
+                'level': skill_profile.skill_level,
+                'created_at': assessment.completed_at or assessment.started_at,
+                'skill_profile_id': skill_profile.id
+            })
+            
+        return Response(roadmaps, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error fetching user roadmaps: {str(e)}")
+        return Response(
+            {'error': 'Failed to fetch roadmaps'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_roadmap_details(request, assessment_id):
+    """Get specific roadmap details, regenerating if necessary"""
+    try:
+        # Get the skill profile
+        skill_profile = SkillProfile.objects.filter(
+            user=request.user,
+            assessment_id=assessment_id
+        ).latest('created_at')
+        
+        # If roadmap data exists, return it
+        if skill_profile.roadmap_data:
+            return Response({
+                'roadmap': skill_profile.roadmap_data
+            }, status=status.HTTP_200_OK)
+            
+        # --- SELF-HEALING: If roadmap data is missing, generate it now ---
+        logger.info(f"Regenerating missing roadmap data for assessment {assessment_id}")
+        
+        from .roadmap_generator import generate_learning_roadmap
+        from .resource_generator import generate_resources_for_roadmap
+        
+        assessment = skill_profile.assessment
+        user = request.user
+        
+        # Extract data needed for generation
+        topic = assessment.custom_course_name or (assessment.course.title if assessment.course else 'General')
+        skill_level = skill_profile.skill_level
+        weaknesses = skill_profile.weaknesses
+        strengths = skill_profile.strengths
+        weekly_hours = user.profile.weekly_hours if hasattr(user, 'profile') else 5
+        
+        # Generate new roadmap structure
+        roadmap_data = generate_learning_roadmap(
+            topic=topic,
+            skill_level=skill_level,
+            weaknesses=weaknesses,
+            strengths=strengths,
+            weekly_hours=weekly_hours
+        )
+        
+        if not roadmap_data:
+            return Response({'error': 'Failed to regenerate roadmap'}, status=500)
+            
+        # Generate resources (populates DB tables)
+        try:
+            resource_stats = generate_resources_for_roadmap(roadmap_data, skill_level)
+            roadmap_data['resource_generation_stats'] = resource_stats
+        except Exception as e:
+            logger.error(f"Resource generation error during regen: {e}")
+            
+        # Save to DB so we don't need to regen next time
+        skill_profile.roadmap_data = roadmap_data
+        skill_profile.save()
+        
+        return Response({
+            'roadmap': roadmap_data,
+            'status': 'regenerated'
+        }, status=status.HTTP_200_OK)
+        
+    except SkillProfile.DoesNotExist:
+        return Response(
+            {'error': 'Roadmap not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error fetching roadmap details: {str(e)}")
+        return Response(
+            {'error': f'Failed to fetch roadmap details: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

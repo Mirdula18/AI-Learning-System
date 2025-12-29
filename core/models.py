@@ -96,6 +96,7 @@ class SkillProfile(models.Model):
     weaknesses = models.JSONField(default=list)
     estimated_weeks = models.IntegerField()
     raw_results = models.JSONField()
+    roadmap_data = models.JSONField(null=True, blank=True, help_text="Generated roadmap structure")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

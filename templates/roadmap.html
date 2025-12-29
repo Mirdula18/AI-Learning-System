@@ -3,104 +3,324 @@
 {% block title %}Learning Roadmap - AdaptLearn{% endblock %}
 
 {% block content %}
-<div class="roadmap-container">
-    <div class="roadmap-header">
-        <h1 id="roadmapTitle">📚 Your Personalized Learning Roadmap</h1>
-        <p class="roadmap-subtitle" id="roadmapSubtitle">Track your progress and complete assignments for each topic</p>
-    </div>
+<style>
+    .roadmap-layout {
+        display: flex;
+        min-height: calc(100vh - 70px);
+        background: #f8f9fa;
+    }
 
-    <!-- Progress Overview -->
-    <div class="progress-overview" id="progressOverview">
-        <div class="progress-card">
-            <div class="progress-icon">📊</div>
-            <div class="progress-details">
-                <h3 id="completionPercentage">0%</h3>
-                <p>Overall Progress</p>
-            </div>
-        </div>
-        <div class="progress-card">
-            <div class="progress-icon">✅</div>
-            <div class="progress-details">
-                <h3 id="completedCount">0</h3>
-                <p>Completed Assignments</p>
-            </div>
-        </div>
-        <div class="progress-card">
-            <div class="progress-icon">📝</div>
-            <div class="progress-details">
-                <h3 id="pendingCount">0</h3>
-                <p>Pending Assignments</p>
-            </div>
-        </div>
-        <div class="progress-card">
-            <div class="progress-icon">⭐</div>
-            <div class="progress-details">
-                <h3 id="totalScore">0</h3>
-                <p>Total Points</p>
-            </div>
-        </div>
-        <div class="progress-card">
-            <div class="progress-icon">⏱️</div>
-            <div class="progress-details">
-                <h3 id="totalTime">0m</h3>
-                <p>Time Spent</p>
-            </div>
-        </div>
-    </div>
+    .roadmap-sidebar {
+        width: 320px;
+        background: #fff;
+        border-right: 1px solid #e2e8f0;
+        padding: 25px;
+        position: fixed;
+        top: 70px;
+        bottom: 0px;
+        overflow-y: auto;
+        z-index: 90;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
+    }
 
-    <!-- Roadmap Topics -->
-    <div class="roadmap-topics" id="roadmapTopics">
-        <!-- Topics will be loaded dynamically -->
-        <div class="loading-state">
-            <div class="spinner"></div>
-            <p>Loading your roadmap...</p>
-        </div>
-    </div>
+    .roadmap-sidebar h3 {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        color: #2d3748;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-    <!-- Assignment Submission Modal -->
-    <div class="modal" id="assignmentModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Assignment</h2>
-                <button class="close-btn" onclick="closeAssignmentModal()">&times;</button>
+    .course-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .course-item {
+        padding: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid #edf2f7;
+        background: white;
+    }
+
+    .course-item:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .course-item.active {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .course-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .course-title {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .course-meta {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        display: flex;
+        gap: 10px;
+    }
+
+    .course-date {
+        font-size: 0.75rem;
+        opacity: 0.6;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .roadmap-main {
+        flex: 1;
+        margin-left: 320px;
+        padding: 30px;
+        width: calc(100% - 320px);
+    }
+
+    /* Update existing container */
+    .roadmap-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0;
+        min-height: auto;
+    }
+
+    .empty-state-sidebar {
+        text-align: center;
+        padding: 30px 10px;
+        color: #718096;
+        background: #f7fafc;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 1024px) {
+        .roadmap-sidebar {
+            width: 280px;
+        }
+
+        .roadmap-main {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .roadmap-layout {
+            flex-direction: column;
+        }
+
+        .roadmap-sidebar {
+            width: 100%;
+            position: relative;
+            top: 0;
+            height: auto;
+            border-right: none;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 10;
+        }
+
+        .roadmap-main {
+            margin-left: 0;
+            width: 100%;
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="roadmap-layout">
+    <!-- Sidebar -->
+    <aside class="roadmap-sidebar">
+        <h3>
+            <span>📚</span> My Roadmaps
+        </h3>
+        <div id="courseList" class="course-list">
+            <!-- Populated via JS -->
+            <div class="loading-state-small">
+                <div class="spinner-small"></div>
+                <span>Loading courses...</span>
             </div>
-            <div class="modal-body">
-                <div class="assignment-info">
-                    <div class="info-badges">
-                        <span class="badge difficulty-badge" id="modalDifficulty">Medium</span>
-                        <span class="badge points-badge" id="modalPoints">100 Points</span>
-                        <span class="badge time-badge" id="modalTime">2 Hours</span>
+        </div>
+
+        <a href="/courses/" class="btn btn-outline-primary"
+            style="margin-top: 20px; width: 100%; justify-content: center; display: flex; align-items: center; gap: 8px;">
+            <span>+</span> Start New Course
+        </a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="roadmap-main">
+        <div class="roadmap-container">
+
+            <div class="roadmap-header">
+                <h1 id="roadmapTitle">📚 Your Personalized Learning Roadmap</h1>
+                <p class="roadmap-subtitle" id="roadmapSubtitle">Track your progress and complete assignments for each
+                    topic</p>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="progress-overview" id="progressOverview">
+                <div class="progress-card">
+                    <div class="progress-icon">📊</div>
+                    <div class="progress-details">
+                        <h3 id="completionPercentage">0%</h3>
+                        <p>Overall Progress</p>
                     </div>
-                    <h3>Description</h3>
-                    <p id="modalDescription"></p>
-
-                    <h3>Instructions</h3>
-                    <div id="modalInstructions"></div>
                 </div>
+                <div class="progress-card">
+                    <div class="progress-icon">✅</div>
+                    <div class="progress-details">
+                        <h3 id="completedCount">0</h3>
+                        <p>Completed Assignments</p>
+                    </div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-icon">📝</div>
+                    <div class="progress-details">
+                        <h3 id="pendingCount">0</h3>
+                        <p>Pending Assignments</p>
+                    </div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-icon">⭐</div>
+                    <div class="progress-details">
+                        <h3 id="totalScore">0</h3>
+                        <p>Total Points</p>
+                    </div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-icon">⏱️</div>
+                    <div class="progress-details">
+                        <h3 id="totalTime">0m</h3>
+                        <p>Time Spent</p>
+                    </div>
+                </div>
+            </div>
 
-                <form id="assignmentForm" onsubmit="submitAssignment(event)">
-                    <input type="hidden" id="assignmentId" name="assignment_id">
+            <!-- Roadmap Topics -->
+            <div class="roadmap-topics" id="roadmapTopics">
+                <!-- Topics will be loaded dynamically -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading your roadmap...</p>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label for="submissionText">Your Answer / Solution</label>
-                        <textarea id="submissionText" name="submission_text" rows="6"
-                            placeholder="Type your answer here..."></textarea>
+            <!-- Assignment Submission Modal -->
+            <div class="modal" id="assignmentModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="modalTitle">Assignment</h2>
+                        <button class="close-btn" onclick="closeAssignmentModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="assignment-info">
+                            <div class="info-badges">
+                                <span class="badge difficulty-badge" id="modalDifficulty">Medium</span>
+                                <span class="badge points-badge" id="modalPoints">100 Points</span>
+                                <span class="badge time-badge" id="modalTime">2 Hours</span>
+                            </div>
+                            <h3>Description</h3>
+                            <p id="modalDescription"></p>
+
+                            <h3>Instructions</h3>
+                            <div id="modalInstructions"></div>
+                        </div>
+
+                        <form id="assignmentForm" onsubmit="submitAssignment(event)">
+                            <input type="hidden" id="assignmentId" name="assignment_id">
+
+                            <div class="form-group">
+                                <label for="submissionText">Your Answer / Solution</label>
+                                <textarea id="submissionText" name="submission_text" rows="6"
+                                    placeholder="Type your answer here..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="submissionLink">Or Submit a Link (GitHub, Google Drive, etc.)</label>
+                                <input type="url" id="submissionLink" name="submission_link"
+                                    placeholder="https://github.com/yourusername/project">
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary"
+                                    onclick="closeAssignmentModal()">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Success Modal -->
+            <div class="modal" id="successModal">
+                <div class="modal-content success-modal">
+                    <div class="success-animation">
+                        <div class="checkmark-circle">
+                            <svg class="checkmark" viewBox="0 0 52 52">
+                                <circle class="checkmark-circle-bg" cx="26" cy="26" r="25" fill="none" />
+                                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                            </svg>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="submissionLink">Or Submit a Link (GitHub, Google Drive, etc.)</label>
-                        <input type="url" id="submissionLink" name="submission_link"
-                            placeholder="https://github.com/yourusername/project">
+                    <h2>🎉 Assignment Submitted!</h2>
+                    <p class="success-message">Great work! Your submission has been received.</p>
+
+                    <!-- Current Level Badge -->
+                    <div class="level-display">
+                        <h3>Your Current Level</h3>
+                        <div class="level-badge-large" id="currentLevelBadge">
+                            <span class="level-icon" id="levelIcon">🌟</span>
+                            <span class="level-text" id="levelText">Intermediate</span>
+                        </div>
+                        <p class="level-description" id="levelDescription">You're making great progress!</p>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeAssignmentModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                    <!-- Achievement Badges -->
+                    <div class="achievements-container" id="achievementsContainer" style="display: none;">
+                        <h3>🏆 Achievements Unlocked!</h3>
+                        <div class="achievements-grid" id="achievementsList"></div>
                     </div>
-                </form>
+
+                    <!-- Stats Summary -->
+                    <div class="stats-summary">
+                        <div class="stat-box">
+                            <span class="stat-number" id="completedAssignments">0</span>
+                            <span class="stat-label">Completed</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-number" id="averageScore">0%</span>
+                            <span class="stat-label">Avg Score</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-number" id="currentStreak">0</span>
+                            <span class="stat-label">Day Streak</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-large" onclick="closeSuccessModal()">Continue Learning</button>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 
