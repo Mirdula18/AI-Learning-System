@@ -2316,7 +2316,7 @@
 
 <body>
     <!-- Navigation Bar -->
-    <nav class="navbar" id="navbar">
+    <nav class="navbar" id="navbar" style="display: none;">
         <div class="nav-container">
             <div class="nav-brand">
                 <a href="/" class="brand-link">
@@ -2395,23 +2395,38 @@
             }
         });
 
-        // Show/hide logout button based on login status
+        // Show/hide navbar based on authentication
         const token = localStorage.getItem('token');
+        const navbar = document.getElementById('navbar');
         const logoutBtn = document.getElementById('logoutBtn');
 
-        if (token && logoutBtn) {
-            logoutBtn.style.display = 'flex';
+        // Pages that should NOT show navbar even if logged in
+        const publicPages = ['/login/', '/register/', '/'];
+        const isPublicPage = publicPages.includes(window.location.pathname);
 
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('latestRoadmap');
-                window.location.href = '/login/';
-            });
+        if (token && !isPublicPage && navbar) {
+            // User is authenticated and not on public page - show navbar
+            navbar.style.display = 'block';
+
+            if (logoutBtn) {
+                logoutBtn.style.display = 'flex';
+
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('latestRoadmap');
+                    window.location.href = '/login/';
+                });
+            }
+        } else {
+            // Hide navbar on public pages or when not authenticated
+            if (navbar) {
+                navbar.style.display = 'none';
+            }
         }
 
         // Navbar scroll effect
         let lastScroll = 0;
-        const navbar = document.getElementById('navbar');
+        // navbar already declared above
 
         window.addEventListener('scroll', () => {
             const currentScroll = window.pageYOffset;

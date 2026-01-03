@@ -192,6 +192,22 @@ def start_assessment(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # ⭐ GUARD: Check if user has already completed an assessment for this course
+        existing_assessment = Assessment.objects.filter(
+            user=user,
+            custom_course_name=course_name,
+            status='completed'
+        ).first()
+        
+        if existing_assessment:
+            logger.warning(f"User {user.username} attempted duplicate assessment for {course_name}")
+            return Response({
+                'error': 'Assessment already completed',
+                'message': f'You have already completed an assessment for "{course_name}". You can view your roadmap instead.',
+                'assessment_id': existing_assessment.id,
+                'redirect_to_roadmap': True
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         # Import here to avoid circular imports
         from .quiz_generator import generate_assessment_quiz
         
@@ -753,6 +769,120 @@ def submit_assignment_api(request):
                 'description': '3-day learning streak!'
             })
         
+        # ===== DYNAMIC SKILL LEVEL PROGRESSION =====
+        # Update skill level based on assignment performance
+        skill_level_changed = False
+        new_skill_level = skill_level
+        
+        try:
+            latest_profile = SkillProfile.objects.filter(user=request.user).latest('created_at')
+            
+            # Calculate performance metrics
+            if graded_submissions.count() >= 3:  # Need at least 3 graded assignments
+                recent_submissions = graded_submissions.order_by('-submitted_at')[:5]
+                recent_avg = recent_submissions.aggregate(models.Avg('score'))['score__avg'] or 0
+                
+                # Determine new skill level based on performance
+                current_level = latest_profile.skill_level
+                
+                # Progression logic
+                if current_level == 'absolute_beginner' and recent_avg >= 70 and completed_count >= 3:
+                    new_skill_level = 'beginner'
+                    skill_level_changed = True
+                elif current_level == 'beginner' and recent_avg >= 75 and completed_count >= 8:
+                    new_skill_level = 'intermediate'
+                    skill_level_changed = True
+                elif current_level == 'intermediate' and recent_avg >= 80 and completed_count >= 15:
+                    new_skill_level = 'advanced'
+                    skill_level_changed = True
+                
+                # Update SkillProfile if level changed
+                if skill_level_changed:
+                    latest_profile.skill_level = new_skill_level
+                    latest_profile.confidence_score = int(recent_avg)
+                    latest_profile.save()
+                    
+                    skill_level = new_skill_level
+                    logger.info(f"User {request.user.id} progressed to {new_skill_level}")
+                    
+                    # Add level-up achievement
+                    achievements.append({
+                        'icon': '🎊',
+                        'title': 'Level Up!',
+                        'description': f'Advanced to {new_skill_level.replace("_", " ").title()} level!'
+                    })
+                    
+                    # ===== REGENERATE ROADMAP FOR NEW LEVEL =====
+                    try:
+                        from .roadmap_generator import generate_learning_roadmap
+                        from .resource_generator import generate_resources_for_roadmap
+                        
+                        # Get the assessment associated with this profile
+                        assessment = latest_profile.assessment
+                        topic = assessment.custom_course_name or (assessment.course.title if assessment.course else 'General')
+                        
+                        # Get updated weaknesses based on assignment topics where user scored low
+                        weak_topics = []
+                        for sub in graded_submissions.filter(score__lt=70):
+                            topic_name = sub.assignment.topic
+                            if topic_name and topic_name not in weak_topics:
+                                weak_topics.append(topic_name)
+                        
+                        # Get strengths from high-scoring assignments
+                        strong_topics = []
+                        for sub in graded_submissions.filter(score__gte=85):
+                            topic_name = sub.assignment.topic
+                            if topic_name and topic_name not in strong_topics:
+                                strong_topics.append(topic_name)
+                        
+                        # Update profile weaknesses/strengths
+                        if weak_topics:
+                            latest_profile.weaknesses = [{'topic': t, 'priority': 'high'} for t in weak_topics[:5]]
+                        if strong_topics:
+                            latest_profile.strengths = [{'topic': t} for t in strong_topics[:5]]
+                        latest_profile.save()
+                        
+                        # Generate new roadmap
+                        weekly_hours = request.user.profile.weekly_hours if hasattr(request.user, 'profile') else 5
+                        
+                        new_roadmap = generate_learning_roadmap(
+                            topic=topic,
+                            skill_level=new_skill_level,
+                            weaknesses=latest_profile.weaknesses,
+                            strengths=latest_profile.strengths,
+                            weekly_hours=weekly_hours
+                        )
+                        
+                        if new_roadmap:
+                            # Generate resources for new roadmap
+                            try:
+                                resource_stats = generate_resources_for_roadmap(new_roadmap, new_skill_level)
+                                new_roadmap['resource_generation_stats'] = resource_stats
+                            except Exception as e:
+                                logger.error(f"Resource generation error: {e}")
+                            
+                            # Save new roadmap
+                            latest_profile.roadmap_data = new_roadmap
+                            latest_profile.save()
+                            
+                            logger.info(f"Regenerated roadmap for user {request.user.id} at {new_skill_level} level")
+                            
+                    except Exception as e:
+                        logger.error(f"Roadmap regeneration error: {str(e)}")
+                        # Continue even if regeneration fails
+                        
+        except SkillProfile.DoesNotExist:
+            pass
+        
+        # Update level info for response
+        level_info = {
+            'absolute_beginner': ('🌱', 'Just getting started!', 'You\'re building a strong foundation.'),
+            'beginner': ('🌿', 'Making Progress!', 'You\'re developing core skills.'),
+            'intermediate': ('🌟', 'Great Progress!', 'You\'re mastering key concepts.'),
+            'advanced': ('🚀', 'Expert Level!', 'Outstanding knowledge and skills!')
+        }
+        level_icon, level_title, skill_description = level_info.get(skill_level, ('🌟', 'Keep Going!', 'You\'re doing great!'))
+        
         serializer = AssignmentSubmissionSerializer(submission)
         
         return Response({
@@ -762,7 +892,8 @@ def submit_assignment_api(request):
                 'skill_level': skill_level,
                 'icon': level_icon,
                 'title': level_title,
-                'description': skill_description
+                'description': skill_description,
+                'level_changed': skill_level_changed
             },
             'stats': {
                 'completed_assignments': completed_count,

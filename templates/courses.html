@@ -137,6 +137,12 @@
             console.log('Response data:', data);
 
             if (!response.ok) {
+                // Check if this is a duplicate assessment error
+                if (response.status === 403 && data.redirect_to_roadmap) {
+                    alert(`⚠️ ${data.message}`);
+                    window.location.href = '/roadmap/';
+                    return;
+                }
                 throw new Error(data.error || 'Failed to start assessment');
             }
 

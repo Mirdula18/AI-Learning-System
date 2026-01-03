@@ -32,4 +32,5 @@ urlpatterns = [
     path('api/profile/update-time/', views.update_learning_time, name='api_update_time'),
     path('api/roadmaps/user/', views.get_user_roadmaps, name='api_user_roadmaps'),
     path('api/roadmaps/<int:assessment_id>/', views.get_roadmap_details, name='api_roadmap_details'),
+
 ]

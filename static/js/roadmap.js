@@ -13,6 +13,7 @@ let currentTopics = []; // Store the current topics array for access across func
 document.addEventListener('DOMContentLoaded', () => {
     loadUserProgress();
     loadUserCourses();
+    loadRoadmapData();
 });
 
 /**
@@ -42,121 +43,6 @@ async function loadUserProgress() {
         }
     } catch (error) {
         console.error('Error loading progress:', error);
-    }
-}
-
-/**
- * Load list of user's active courses/roadmaps
- */
-async function loadUserCourses() {
-    const listContainer = document.getElementById('courseList');
-    if (!listContainer) return;
-
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const response = await fetch('/api/roadmaps/user/', {
-            headers: { 'Authorization': `Token ${token}` }
-        });
-
-        if (response.ok) {
-            const courses = await response.json();
-            renderCourseList(courses);
-        } else {
-            listContainer.innerHTML = '<div class="empty-state-sidebar">Failed to load courses</div>';
-        }
-    } catch (e) {
-        console.error('Error loading courses:', e);
-        listContainer.innerHTML = '<div class="empty-state-sidebar">Error loading courses</div>';
-    }
-}
-
-/**
- * Render the sidebar list of courses
- */
-function renderCourseList(courses) {
-    const listContainer = document.getElementById('courseList');
-    listContainer.innerHTML = '';
-
-    if (courses.length === 0) {
-        listContainer.innerHTML = `
-            <div class="empty-state-sidebar">
-                <p>No active roadmaps found.</p>
-                <a href="/courses/" style="font-size:0.9em; color: var(--primary-color);">Start a new course</a>
-            </div>
-        `;
-        showEmptyRoadmapMessage();
-        return;
-    }
-
-    courses.forEach((course, index) => {
-        const item = document.createElement('div');
-        item.className = 'course-item';
-        item.dataset.id = course.id;
-        item.innerHTML = `
-            <div class="course-item-header">
-                <span class="course-title">${escapeHtml(course.title)}</span>
-                <span class="course-level" style="text-transform: capitalize;">${course.level}</span>
-            </div>
-            <span class="course-date">Started ${new Date(course.created_at).toLocaleDateString()}</span>
-        `;
-        item.onclick = () => loadCourseRoadmap(course.id, item);
-        listContainer.appendChild(item);
-    });
-
-    // Auto-select first course
-    if (courses.length > 0) {
-        const firstItem = listContainer.firstElementChild;
-        if (firstItem) {
-            firstItem.click();
-        }
-    }
-}
-
-/**
- * Load specific roadmap details when a course is selected
- */
-async function loadCourseRoadmap(assessmentId, element) {
-    if (!assessmentId) return;
-
-    // Highlight active sidebar item
-    document.querySelectorAll('.course-item').forEach(el => el.classList.remove('active'));
-    if (element) {
-        element.classList.add('active');
-    }
-
-    const container = document.getElementById('roadmapTopics');
-    container.innerHTML = `
-        <div class="loading-state">
-            <div class="spinner"></div>
-            <p>Loading roadmap...</p>
-        </div>
-    `;
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`/api/roadmaps/${assessmentId}/`, {
-            headers: { 'Authorization': `Token ${token}` }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.roadmap) {
-                roadmapData = data.roadmap;
-                displayRoadmap(roadmapData);
-
-                // Store as current context for assignments? 
-                // Ideally backend handles assignment linking via Topic name.
-            } else {
-                throw new Error('No roadmap data in response');
-            }
-        } else {
-            throw new Error('Failed to fetch roadmap details');
-        }
-    } catch (e) {
-        console.error('Error loading roadmap:', e);
-        showEmptyRoadmapMessage();
     }
 }
 
@@ -229,6 +115,117 @@ async function loadRoadmapData() {
         }
     } catch (error) {
         console.error('Error loading roadmap:', error);
+        showEmptyRoadmapMessage();
+    }
+}
+
+
+/**
+ * Load list of user's active courses/roadmaps
+ */
+async function loadUserCourses() {
+    const listContainer = document.getElementById('courseList');
+    if (!listContainer) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('/api/roadmaps/user/', {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+
+        if (response.ok) {
+            const courses = await response.json();
+            renderCourseList(courses);
+        } else {
+            console.warn('Failed to load courses, status:', response.status);
+            listContainer.innerHTML = '<div class="empty-state-sidebar">Failed to load courses</div>';
+        }
+    } catch (e) {
+        console.error('Error loading courses:', e);
+        listContainer.innerHTML = '<div class="empty-state-sidebar">Error loading courses</div>';
+    }
+}
+
+/**
+ * Render the sidebar list of courses
+ */
+function renderCourseList(courses) {
+    const listContainer = document.getElementById('courseList');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    if (courses.length === 0) {
+        listContainer.innerHTML = `
+            <div class="empty-state-sidebar">
+                <p>No active roadmaps found.</p>
+                <a href="/courses/" style="font-size:0.9em; color: var(--primary-color);">Start a new course</a>
+            </div>
+        `;
+        showEmptyRoadmapMessage();
+        return;
+    }
+
+    courses.forEach((course) => {
+        const item = document.createElement('div');
+        item.className = 'course-item';
+        item.dataset.id = course.id;
+
+        item.innerHTML = `
+            <div class="course-item-header">
+                <span class="course-title">${course.title}</span>
+                <span class="course-level" style="text-transform: capitalize;">${course.level}</span>
+            </div>
+            <span class="course-date">Started ${new Date(course.created_at).toLocaleDateString()}</span>
+        `;
+        item.onclick = () => loadCourseRoadmap(course.id, item);
+        listContainer.appendChild(item);
+    });
+}
+
+/**
+ * Load specific roadmap details when a course is selected
+ */
+async function loadCourseRoadmap(assessmentId, element) {
+    if (!assessmentId) return;
+
+    // Highlight active sidebar item
+    document.querySelectorAll('.course-item').forEach(el => el.classList.remove('active'));
+    if (element) {
+        element.classList.add('active');
+    }
+
+    const container = document.getElementById('roadmapTopics');
+    container.innerHTML = `
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading roadmap...</p>
+        </div>
+    `;
+
+    try {
+        const token = localStorage.getItem('token');
+        const url = `/api/roadmaps/${assessmentId}/`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.roadmap) {
+                // Save to localStorage for persistence
+                localStorage.setItem('latestRoadmap', JSON.stringify(data.roadmap));
+                displayRoadmap(data.roadmap);
+            } else {
+                throw new Error('No roadmap data in response');
+            }
+        } else {
+            throw new Error('Failed to fetch roadmap details');
+        }
+    } catch (e) {
+        console.error('Error loading roadmap:', e);
         showEmptyRoadmapMessage();
     }
 }
@@ -663,12 +660,8 @@ async function submitAssignment(event) {
 
         if (response.ok) {
             const result = await response.json();
-
-            // Close submission modal
+            alert('✅ Assignment submitted successfully!');
             closeAssignmentModal();
-
-            // Show success modal with level and achievements
-            showSuccessModal(result);
 
             // Reload roadmap to update assignment status
             loadRoadmapData();
@@ -680,96 +673,6 @@ async function submitAssignment(event) {
     } catch (error) {
         console.error('Error submitting assignment:', error);
         alert('An error occurred while submitting. Please try again.');
-    }
-}
-
-/**
- * Show success modal with level badge and achievements
- */
-function showSuccessModal(data) {
-    const modal = document.getElementById('successModal');
-
-    // Update level badge
-    if (data.user_level) {
-        const levelIcon = document.getElementById('levelIcon');
-        const levelText = document.getElementById('levelText');
-        const levelDescription = document.getElementById('levelDescription');
-        const levelBadge = document.getElementById('currentLevelBadge');
-
-        levelIcon.textContent = data.user_level.icon;
-        levelText.textContent = data.user_level.title || data.user_level.skill_level;
-        levelDescription.textContent = data.user_level.description;
-
-        // Add level-specific class for styling
-        levelBadge.className = `level-badge-large level-${data.user_level.skill_level}`;
-    }
-
-    // Update stats
-    if (data.stats) {
-        document.getElementById('completedAssignments').textContent = data.stats.completed_assignments;
-        document.getElementById('averageScore').textContent = `${data.stats.average_score}%`;
-        document.getElementById('currentStreak').textContent = data.stats.current_streak;
-    }
-
-    // Show achievements if any
-    if (data.achievements && data.achievements.length > 0) {
-        const achievementsContainer = document.getElementById('achievementsContainer');
-        const achievementsList = document.getElementById('achievementsList');
-
-        achievementsContainer.style.display = 'block';
-        achievementsList.innerHTML = data.achievements.map(achievement => `
-            <div class="achievement-badge">
-                <div class="achievement-icon">${achievement.icon}</div>
-                <div class="achievement-info">
-                    <h4>${achievement.title}</h4>
-                    <p>${achievement.description}</p>
-                </div>
-            </div>
-        `).join('');
-
-        // Add celebration animation
-        triggerConfetti();
-    } else {
-        document.getElementById('achievementsContainer').style.display = 'none';
-    }
-
-    // Show modal
-    modal.style.display = 'flex';
-
-    // Trigger animation
-    setTimeout(() => {
-        modal.querySelector('.success-modal').classList.add('animate-in');
-    }, 100);
-}
-
-/**
- * Close success modal
- */
-function closeSuccessModal() {
-    const modal = document.getElementById('successModal');
-    modal.style.display = 'none';
-    modal.querySelector('.success-modal').classList.remove('animate-in');
-}
-
-/**
- * Simple confetti effect for achievements
- */
-function triggerConfetti() {
-    // Simple confetti animation using emoji
-    const confettiCount = 30;
-    const emojis = ['🎉', '✨', '⭐', '🌟', '💫'];
-
-    for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.animationDelay = Math.random() * 0.5 + 's';
-        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-
-        document.body.appendChild(confetti);
-
-        setTimeout(() => confetti.remove(), 4000);
     }
 }
 
