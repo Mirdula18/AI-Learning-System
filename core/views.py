@@ -327,6 +327,37 @@ def submit_assessment(request):
         
         logger.info(f"Assessment {assessment_id} submitted and SkillProfile created for user {user.id}")
         
+        # ⭐ AUTOMATICALLY GENERATE ROADMAP BASED ON ASSESSMENT RESULTS ⭐
+        topic = assessment.custom_course_name or (assessment.course.title if assessment.course else 'General')
+        skill_level = learner_profile_data.get('skill_level', 'beginner')
+        weaknesses = learner_profile_data.get('weaknesses', [])
+        strengths = learner_profile_data.get('strengths', [])
+        weekly_hours = user.profile.weekly_hours if hasattr(user, 'profile') else 5
+        
+        # Generate roadmap with detected skill level
+        from .roadmap_generator import generate_learning_roadmap
+        
+        logger.info(f"Generating roadmap for {topic} at {skill_level} level...")
+        roadmap_data = generate_learning_roadmap(
+            topic=topic,
+            skill_level=skill_level,
+            weaknesses=weaknesses,
+            strengths=strengths,
+            weekly_hours=weekly_hours
+        )
+        
+        # Save roadmap to SkillProfile
+        if roadmap_data:
+            try:
+                skill_profile = SkillProfile.objects.get(assessment=assessment)
+                skill_profile.roadmap_data = roadmap_data
+                skill_profile.save()
+                logger.info(f"✅ Roadmap automatically generated for {skill_level} level user")
+            except SkillProfile.DoesNotExist:
+                logger.warning(f"SkillProfile not found for assessment {assessment.id}")
+        else:
+            logger.warning(f"Failed to generate roadmap for assessment {assessment.id}")
+        
         return Response({
             'message': 'Assessment evaluated successfully',
             'assessment_id': assessment.id,

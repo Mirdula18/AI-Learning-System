@@ -100,46 +100,72 @@ def generate_structured_roadmap(topic, skill_level, weaknesses, strengths, weekl
     
     weeks = []
     
-    # Week 1: Assessment & Foundation
-    weeks.append({
-        "week": 1,
-        "title": " Start Your Journey",
-        "tagline": "Foundation & Getting Started",
-        "focus_areas": [f"Introduction to {topic}", "Key Terminology", "Basic Principles"],
-        "weak_focus": True if weaknesses else False,
-        "learning_objectives": [
+    # Week 1: Different starting points based on skill level
+    week1_titles = {
+        'absolute_beginner': "🎯 Start Your Journey",
+        'beginner': "📚 Foundation Review",
+        'intermediate': "⚡ Quick Fundamentals Review",
+        'advanced': "🚀 Advanced Concepts Refresh"
+    }
+    
+    week1_objectives = {
+        'absolute_beginner': [
             f"Understand what {topic} is",
             f"Learn core principles of {topic}",
             "Grasp essential terminology"
         ],
+        'beginner': [
+            f"Reinforce {topic} fundamentals",
+            "Fill knowledge gaps identified in assessment",
+            "Build confidence with core concepts"
+        ],
+        'intermediate': [
+            f"Review {topic} advanced concepts",
+            "Strengthen areas identified as weak",
+            "Prepare for expert-level topics"
+        ],
+        'advanced': [
+            f"Master cutting-edge {topic} techniques",
+            "Focus on specialized weak areas",
+            "Explore advanced patterns"
+        ]
+    }
+    
+    weeks.append({
+        "week": 1,
+        "title": week1_titles.get(skill_level, "📚 Start Your Journey"),
+        "tagline": "Foundation & Getting Started" if skill_level in ['absolute_beginner', 'beginner'] else "Advanced Review & Weak Area Focus",
+        "focus_areas": [f"{topic} Core Concepts"] + ([w['topic'] for w in weaknesses[:2]] if weaknesses else []),
+        "weak_focus": True if weaknesses else False,
+        "learning_objectives": week1_objectives.get(skill_level, week1_objectives['absolute_beginner']),
         "resources": [
             {
                 "type": "tutorial",
-                "title": f"Getting Started with {topic}",
-                "description": f"Comprehensive introduction to {topic} fundamentals",
+                "title": f"{'Getting Started with' if skill_level in ['absolute_beginner', 'beginner'] else 'Advanced Patterns in'} {topic}",
+                "description": f"{'Comprehensive introduction to' if skill_level in ['absolute_beginner', 'beginner'] else 'Deep dive into advanced'} {topic} {'fundamentals' if skill_level in ['absolute_beginner', 'beginner'] else 'techniques'}",
                 "time_estimate": "3 hours"
             },
             {
                 "type": "reading",
-                "title": f"{topic} Basics Guide",
-                "description": "Essential reading material for beginners",
+                "title": f"{topic} {'Basics' if skill_level in ['absolute_beginner', 'beginner'] else 'Expert'} Guide",
+                "description": f"{'Essential reading material for beginners' if skill_level in ['absolute_beginner', 'beginner'] else 'Advanced concepts and best practices'}",
                 "time_estimate": "2 hours"
             }
         ],
         "practice_exercises": [
-            "Complete vocabulary quiz",
-            "Identify core concepts in examples",
-            "Answer 20 practice questions"
+            f"{'Complete vocabulary quiz' if skill_level in ['absolute_beginner', 'beginner'] else 'Solve 15 advanced problems'}",
+            f"{'Identify core concepts in examples' if skill_level in ['absolute_beginner', 'beginner'] else 'Implement complex design patterns'}",
+            f"{'Answer 20 practice questions' if skill_level in ['absolute_beginner', 'beginner'] else 'Optimize existing solutions'}"
         ],
         "daily_tasks": [
-            " Monday-Tuesday: Watch introductory videos (3 hrs)",
-            " Wednesday: Read foundational material (2 hrs)",
-            " Thursday-Friday: Complete practice exercises (3 hrs)",
-            " Weekend: Consolidate learning, create summary notes (3 hrs)"
+            f" Monday-Tuesday: {'Watch introductory videos' if skill_level in ['absolute_beginner', 'beginner'] else 'Master advanced techniques'} (3 hrs)",
+            f" Wednesday: {'Read foundational material' if skill_level in ['absolute_beginner', 'beginner'] else 'Study expert patterns'} (2 hrs)",
+            f" Thursday-Friday: {'Complete practice exercises' if skill_level in ['absolute_beginner', 'beginner'] else 'Build complex implementations'} (3 hrs)",
+            f" Weekend: {'Consolidate learning' if skill_level in ['absolute_beginner', 'beginner'] else 'Refine and optimize code'} (3 hrs)"
         ],
-        "milestone": "Understand basic concepts and vocabulary",
+        "milestone": f"{'Understand basic concepts and vocabulary' if skill_level in ['absolute_beginner', 'beginner'] else 'Master advanced patterns and expert techniques'}",
         "estimated_hours": weekly_hours,
-        "motivation": "Every expert was once a beginner. You're taking the first step!"
+        "motivation": f"{'Every expert was once a beginner. You are taking the first step!' if skill_level in ['absolute_beginner', 'beginner'] else 'You are already skilled! Time to reach mastery level 🚀'}"
     })
     
     # Weeks 2-N: Based on weak areas
