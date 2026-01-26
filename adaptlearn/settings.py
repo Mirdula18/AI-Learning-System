@@ -54,16 +54,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'adaptlearn.wsgi.application'
 
+# SQLite Database (for local development)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# PostgreSQL Database (for production)
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -72,10 +71,6 @@ DATABASES = {
 #         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
 #         'HOST': os.getenv('DATABASE_HOST'),
 #         'PORT': os.getenv('DATABASE_PORT'),
-#         'OPTIONS': {
-#             "client_encoding": "utf8",
-#             "driver": "pg8000",
-#         }
 #     }
 # }
 
