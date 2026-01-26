@@ -50,6 +50,15 @@
 {% block extra_js %}
 <script src="/static/js/auth.js"></script>
 <script>
+    // If already logged in, redirect to profile
+    (function() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            window.location.replace('/profile/');
+            return;
+        }
+    })();
+
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 

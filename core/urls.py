@@ -15,6 +15,7 @@ urlpatterns = [
     # API endpoints
     path('api/auth/register/', views.register_user, name='api_register'),
     path('api/auth/login/', views.login_user, name='api_login'),
+    path('api/profile/', views.get_profile, name='api_get_profile'),
     path('api/profile/create/', views.create_profile, name='api_create_profile'),
     path('api/courses/', views.get_courses, name='api_courses'),
     path('api/assessment/start/', views.start_assessment, name='api_start_assessment'),

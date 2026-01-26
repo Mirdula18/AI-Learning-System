@@ -1,12 +1,76 @@
 {% extends 'base.html' %}
 
-{% block title %}Setup Profile - AdaptLearn{% endblock %}
+{% block title %}My Profile - AdaptLearn{% endblock %}
 
 {% block content %}
 <div class="profile-container">
-    <div class="profile-card">
+    <!-- Loading State -->
+    <div id="loadingState" class="profile-card" style="text-align: center; padding: 60px;">
+        <div class="spinner"></div>
+        <p>Loading your profile...</p>
+    </div>
+
+    <!-- Profile Display (when profile exists) -->
+    <div id="profileDisplay" class="profile-display-card" style="display: none;">
+        <div class="profile-header-section">
+            <div class="profile-avatar">
+                <span id="avatarInitials">U</span>
+            </div>
+            <div class="profile-info">
+                <h2 id="userName">User Name</h2>
+                <p id="userEmail">user@example.com</p>
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="showEditMode()">✏️ Edit Profile</button>
+        </div>
+
+        <div class="profile-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-content">
+                    <h4>Learning Goal</h4>
+                    <p id="displayGoal">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-content">
+                    <h4>Weekly Hours</h4>
+                    <p><span id="displayHours">0</span> hours/week</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h4>Preferred Time</h4>
+                    <p id="displayTime">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <h4>Total Learning Time</h4>
+                    <p><span id="displayTotalTime">0</span> hours</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="courses-section">
+            <h3>📖 My Courses</h3>
+            <div id="coursesList" class="courses-list">
+                <p class="empty-text">No courses yet. <a href="/courses/">Start learning!</a></p>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <a href="/courses/" class="btn btn-primary">📚 Browse Courses</a>
+            <a href="/roadmap/" class="btn btn-secondary">🗺️ View Roadmap</a>
+        </div>
+    </div>
+
+    <!-- Profile Setup Form (when no profile exists or editing) -->
+    <div id="profileSetup" class="profile-card" style="display: none;">
         <div class="profile-header">
-            <h2>Tell Us About Your Learning Goals</h2>
+            <h2 id="formTitle">Tell Us About Your Learning Goals</h2>
             <p>Help us personalize your experience</p>
         </div>
         
@@ -118,25 +182,285 @@
                 </div>
                 <div class="button-group">
                     <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Complete Setup</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Save Profile</button>
                 </div>
             </div>
             
             <div id="errorMessage" class="error-message" style="display: none;"></div>
         </form>
+        
+        <div id="cancelEditBtn" style="display: none; text-align: center; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+        </div>
     </div>
 </div>
+
+<style>
+.profile-display-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 40px auto;
+    overflow: hidden;
+}
+
+.profile-header-section {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-info h2 {
+    margin: 0 0 5px 0;
+    font-size: 28px;
+}
+
+.profile-info p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    padding: 30px;
+}
+
+.stat-card {
+    background: #f7fafc;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-icon {
+    font-size: 32px;
+}
+
+.stat-content h4 {
+    margin: 0;
+    font-size: 12px;
+    color: #718096;
+    text-transform: uppercase;
+}
+
+.stat-content p {
+    margin: 5px 0 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.courses-section {
+    padding: 0 30px 30px;
+}
+
+.courses-section h3 {
+    margin-bottom: 15px;
+    color: #2d3748;
+}
+
+.courses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.course-item-display {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course-name {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.course-level {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    text-transform: capitalize;
+}
+
+.empty-text {
+    color: #718096;
+    text-align: center;
+    padding: 20px;
+}
+
+.profile-actions {
+    padding: 20px 30px 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 let currentStep = 1;
+let isEditMode = false;
+let existingProfile = null;
+
+// Check authentication and load profile on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!localStorage.getItem('token')) {
+        window.location.href = '/login/';
+        return;
+    }
+    
+    await loadProfile();
+});
+
+async function loadProfile() {
+    try {
+        const response = await fetch('/api/profile/', {
+            headers: {
+                'Authorization': `Token ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('loadingState').style.display = 'none';
+        
+        if (data.exists) {
+            existingProfile = data;
+            showProfileDisplay(data);
+        } else {
+            showSetupForm();
+        }
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        document.getElementById('loadingState').style.display = 'none';
+        showSetupForm();
+    }
+}
+
+function showProfileDisplay(data) {
+    document.getElementById('profileDisplay').style.display = 'block';
+    document.getElementById('profileSetup').style.display = 'none';
+    
+    // Set user info
+    const user = data.profile.user;
+    const initials = user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+    document.getElementById('avatarInitials').textContent = initials;
+    document.getElementById('userName').textContent = user.full_name;
+    document.getElementById('userEmail').textContent = user.email;
+    
+    // Set profile stats
+    document.getElementById('displayGoal').textContent = data.profile.learning_goal_display;
+    document.getElementById('displayHours').textContent = data.profile.weekly_hours;
+    document.getElementById('displayTime').textContent = data.profile.preferred_time_display;
+    document.getElementById('displayTotalTime').textContent = data.stats.total_time_spent_hours;
+    
+    // Set courses
+    const coursesList = document.getElementById('coursesList');
+    if (data.courses && data.courses.length > 0) {
+        coursesList.innerHTML = data.courses.map(course => `
+            <div class="course-item-display">
+                <span class="course-name">${course.course_name}</span>
+                <span class="course-level">${course.skill_level.replace('_', ' ')}</span>
+            </div>
+        `).join('');
+    } else {
+        coursesList.innerHTML = '<p class="empty-text">No courses yet. <a href="/courses/">Start learning!</a></p>';
+    }
+}
+
+function showSetupForm() {
+    document.getElementById('profileDisplay').style.display = 'none';
+    document.getElementById('profileSetup').style.display = 'block';
+}
+
+function showEditMode() {
+    isEditMode = true;
+    document.getElementById('formTitle').textContent = 'Update Your Profile';
+    document.getElementById('cancelEditBtn').style.display = 'block';
+    
+    // Pre-fill form with existing data
+    if (existingProfile) {
+        const goal = existingProfile.profile.learning_goal;
+        const time = existingProfile.profile.preferred_time;
+        const hours = existingProfile.profile.weekly_hours;
+        
+        const goalRadio = document.querySelector(`input[name="learning_goal"][value="${goal}"]`);
+        if (goalRadio) goalRadio.checked = true;
+        
+        const timeRadio = document.querySelector(`input[name="preferred_time"][value="${time}"]`);
+        if (timeRadio) timeRadio.checked = true;
+        
+        document.getElementById('timeSlider').value = hours;
+        document.getElementById('hoursDisplay').textContent = hours;
+    }
+    
+    showSetupForm();
+}
+
+function cancelEdit() {
+    isEditMode = false;
+    currentStep = 1;
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.querySelector('.step[data-step="1"]').classList.add('active');
+    updateProgress();
+    
+    if (existingProfile) {
+        showProfileDisplay(existingProfile);
+    }
+}
 
 function nextStep() {
     const currentStepEl = document.querySelector(`.step[data-step="${currentStep}"]`);
     const inputs = currentStepEl.querySelectorAll('input[required]');
     
-    // Validate current step
     let valid = true;
     inputs.forEach(input => {
         if (input.type === 'radio') {
@@ -153,7 +477,6 @@ function nextStep() {
         return;
     }
     
-    // Move to next step
     currentStepEl.classList.remove('active');
     currentStep++;
     document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
@@ -201,25 +524,29 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
         });
         
         if (response.ok) {
-            window.location.href = '/courses/';
+            // Reload profile to show updated data
+            await loadProfile();
+            
+            // Reset form state
+            currentStep = 1;
+            isEditMode = false;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.querySelector('.step[data-step="1"]').classList.add('active');
+            updateProgress();
+            
         } else {
             const data = await response.json();
             document.getElementById('errorMessage').textContent = data.error || 'Failed to save profile';
             document.getElementById('errorMessage').style.display = 'block';
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Complete Setup';
+            submitBtn.textContent = 'Save Profile';
         }
     } catch (error) {
         document.getElementById('errorMessage').textContent = 'Network error. Please try again.';
         document.getElementById('errorMessage').style.display = 'block';
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Complete Setup';
+        submitBtn.textContent = 'Save Profile';
     }
 });
-
-// Check if user is logged in
-if (!localStorage.getItem('token')) {
-    window.location.href = '/login/';
-}
 </script>
 {% endblock %}

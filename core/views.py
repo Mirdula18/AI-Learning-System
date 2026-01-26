@@ -123,10 +123,77 @@ def login_user(request):
         )
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    """Get user profile data"""
+    try:
+        user = request.user
+        
+        # Check if profile exists
+        try:
+            profile = LearnerProfile.objects.get(user=user)
+            
+            # Get learning goal display text
+            goal_display = dict(LearnerProfile.LEARNING_GOALS).get(profile.learning_goal, profile.learning_goal)
+            time_display = dict(LearnerProfile.PREFERRED_TIMES).get(profile.preferred_time, profile.preferred_time)
+            
+            # Get skill profiles (completed assessments)
+            skill_profiles = SkillProfile.objects.filter(user=user).select_related('assessment')
+            courses_data = []
+            for sp in skill_profiles:
+                course_name = sp.assessment.custom_course_name or (sp.assessment.course.title if sp.assessment.course else 'Unknown')
+                courses_data.append({
+                    'course_name': course_name,
+                    'skill_level': sp.skill_level,
+                    'confidence_score': sp.confidence_score,
+                    'completed_at': sp.assessment.completed_at
+                })
+            
+            return Response({
+                'exists': True,
+                'profile': {
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'full_name': f"{user.first_name} {user.last_name}".strip() or user.username
+                    },
+                    'learning_goal': profile.learning_goal,
+                    'learning_goal_display': goal_display,
+                    'weekly_hours': profile.weekly_hours,
+                    'preferred_time': profile.preferred_time,
+                    'preferred_time_display': time_display,
+                    'total_time_spent': profile.total_time_spent,
+                    'created_at': profile.created_at
+                },
+                'courses': courses_data,
+                'stats': {
+                    'total_courses': len(courses_data),
+                    'total_time_spent_hours': round(profile.total_time_spent / 60, 1)
+                }
+            })
+            
+        except LearnerProfile.DoesNotExist:
+            return Response({
+                'exists': False,
+                'message': 'Profile not set up yet'
+            })
+            
+    except Exception as e:
+        logger.error(f"Get profile error: {str(e)}")
+        return Response(
+            {'error': 'Failed to get profile'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_profile(request):
-    """Create learner profile"""
+    """Create or update learner profile"""
     try:
         user = request.user
         
@@ -140,8 +207,9 @@ def create_profile(request):
         )
         
         return Response({
-            'message': 'Profile created successfully',
-            'profile_id': profile.id
+            'message': 'Profile saved successfully',
+            'profile_id': profile.id,
+            'created': created
         })
         
     except Exception as e:

@@ -37,6 +37,15 @@
 
 {% block extra_js %}
 <script>
+    // If already logged in, redirect to profile
+    (function() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            window.location.replace('/profile/');
+            return;
+        }
+    })();
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 

@@ -11,9 +11,12 @@
                 AI-powered personalized learning that adapts to your skill level. 
                 Start your journey with Python programming - completely free.
             </p>
-            <div class="hero-buttons">
-                <a href="/register/" class="btn btn-primary">Get Started Free</a>
-                <a href="/login/" class="btn btn-secondary">Login</a>
+            <div class="hero-buttons" id="heroButtons">
+                <!-- Buttons will be set by JavaScript based on auth state -->
+                <a href="/register/" class="btn btn-primary" id="getStartedBtn">Get Started Free</a>
+                <a href="/login/" class="btn btn-secondary" id="loginBtn">Login</a>
+                <a href="/courses/" class="btn btn-primary" id="goToCoursesBtn" style="display: none;">📚 Browse Courses</a>
+                <a href="/profile/" class="btn btn-secondary" id="goToProfileBtn" style="display: none;">👤 My Profile</a>
             </div>
         </div>
         <div class="hero-image">
@@ -55,9 +58,32 @@
 
 <section class="cta-section">
     <div class="container">
-        <h2>Ready to Transform Your Learning?</h2>
-        <p>Join thousands of learners who are mastering technical skills with personalized AI guidance.</p>
-        <a href="/register/" class="btn btn-primary btn-large">Start Learning Now - It's Free</a>
+        <h2 id="ctaTitle">Ready to Transform Your Learning?</h2>
+        <p id="ctaText">Join thousands of learners who are mastering technical skills with personalized AI guidance.</p>
+        <a href="/register/" class="btn btn-primary btn-large" id="ctaBtn">Start Learning Now - It's Free</a>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check if user is logged in and update UI accordingly
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        
+        if (token) {
+            // User is logged in - show different buttons
+            document.getElementById('getStartedBtn').style.display = 'none';
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('goToCoursesBtn').style.display = 'inline-block';
+            document.getElementById('goToProfileBtn').style.display = 'inline-block';
+            
+            // Update CTA section
+            document.getElementById('ctaTitle').textContent = 'Continue Your Learning Journey';
+            document.getElementById('ctaText').textContent = 'Pick up where you left off and keep making progress toward your goals.';
+            document.getElementById('ctaBtn').href = '/courses/';
+            document.getElementById('ctaBtn').textContent = '📚 Go to My Courses';
+        }
+    });
+</script>
 {% endblock %}

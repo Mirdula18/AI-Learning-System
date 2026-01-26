@@ -2332,26 +2332,39 @@
             </button>
 
             <div class="nav-menu" id="navMenu">
-                <a href="/" class="nav-link">
-                    <span class="nav-icon">🏠</span>
-                    <span>Home</span>
-                </a>
-                <a href="/courses/" class="nav-link">
-                    <span class="nav-icon">📚</span>
-                    <span>Courses</span>
-                </a>
-                <a href="/roadmap/" class="nav-link">
-                    <span class="nav-icon">🗺️</span>
-                    <span>Roadmap</span>
-                </a>
-                <a href="/profile/" class="nav-link">
-                    <span class="nav-icon">👤</span>
-                    <span>Profile</span>
-                </a>
-                <button class="nav-link logout-btn" id="logoutBtn" style="display: none;">
-                    <span class="nav-icon">🚪</span>
-                    <span>Logout</span>
-                </button>
+                <!-- Links for authenticated users -->
+                <div id="authLinks" style="display: none;">
+                    <a href="/" class="nav-link">
+                        <span class="nav-icon">🏠</span>
+                        <span>Home</span>
+                    </a>
+                    <a href="/courses/" class="nav-link">
+                        <span class="nav-icon">📚</span>
+                        <span>Courses</span>
+                    </a>
+                    <a href="/roadmap/" class="nav-link">
+                        <span class="nav-icon">🗺️</span>
+                        <span>Roadmap</span>
+                    </a>
+                    <a href="/profile/" class="nav-link">
+                        <span class="nav-icon">👤</span>
+                        <span>Profile</span>
+                    </a>
+                    <button class="nav-link logout-btn" id="logoutBtn">
+                        <span class="nav-icon">🚪</span>
+                        <span>Logout</span>
+                    </button>
+                </div>
+                
+                <!-- Links for guests -->
+                <div id="guestLinks" style="display: none;">
+                    <a href="/login/" class="nav-link nav-btn">
+                        <span>Login</span>
+                    </a>
+                    <a href="/register/" class="nav-link nav-btn nav-btn-primary">
+                        <span>Get Started</span>
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -2399,22 +2412,37 @@
         const token = localStorage.getItem('token');
         const navbar = document.getElementById('navbar');
         const logoutBtn = document.getElementById('logoutBtn');
+        const authLinks = document.getElementById('authLinks');
+        const guestLinks = document.getElementById('guestLinks');
 
-        // Pages that should NOT show navbar even if logged in
-        const publicPages = ['/login/', '/register/', '/'];
-        const isPublicPage = publicPages.includes(window.location.pathname);
+        // Pages that should NOT show navbar at all
+        const noNavbarPages = ['/login/', '/register/'];
+        const hideNavbar = noNavbarPages.includes(window.location.pathname);
+        
+        // Protected pages that REQUIRE authentication
+        const protectedPages = ['/profile/', '/courses/', '/roadmap/', '/assessment/', '/results/'];
+        const isProtectedPage = protectedPages.some(page => window.location.pathname.startsWith(page));
 
-        if (token && !isPublicPage && navbar) {
-            // User is authenticated and not on public page - show navbar
+        // CRITICAL: Redirect to login if trying to access protected page without token
+        if (!token && isProtectedPage) {
+            // Clear any cached state and redirect
+            window.location.replace('/login/');
+        }
+
+        // Always show navbar except on login/register pages
+        if (!hideNavbar && navbar) {
             navbar.style.display = 'block';
 
             if (logoutBtn) {
                 logoutBtn.style.display = 'flex';
 
                 logoutBtn.addEventListener('click', () => {
+                    // Clear all auth data
                     localStorage.removeItem('token');
                     localStorage.removeItem('latestRoadmap');
-                    window.location.href = '/login/';
+                    
+                    // Use replace to prevent going back to cached pages
+                    window.location.replace('/login/');
                 });
             }
         } else {
@@ -2423,6 +2451,31 @@
                 navbar.style.display = 'none';
             }
         }
+        
+        // Prevent caching of protected pages - check on every page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const currentToken = localStorage.getItem('token');
+                const onProtectedPage = protectedPages.some(page => window.location.pathname.startsWith(page));
+                
+                if (!currentToken && onProtectedPage) {
+                    window.location.replace('/login/');
+                }
+            }
+        });
+        
+        // Also check when page loads from cache (back/forward navigation)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                // Page was loaded from cache
+                const currentToken = localStorage.getItem('token');
+                const onProtectedPage = protectedPages.some(page => window.location.pathname.startsWith(page));
+                
+                if (!currentToken && onProtectedPage) {
+                    window.location.replace('/login/');
+                }
+            }
+        });
 
         // Navbar scroll effect
         let lastScroll = 0;
