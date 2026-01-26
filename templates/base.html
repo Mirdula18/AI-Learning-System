@@ -1836,6 +1836,29 @@
             background: rgba(255, 59, 48, 0.4);
         }
 
+        /* Guest navigation buttons */
+        #guestLinks {
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            padding: 10px 24px !important;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .nav-btn-primary {
+            background: white;
+            color: var(--primary-color) !important;
+        }
+        
+        .nav-btn-primary:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+
         /* Mobile menu toggle */
         .nav-toggle {
             display: none;
@@ -2432,21 +2455,29 @@
         // Always show navbar except on login/register pages
         if (!hideNavbar && navbar) {
             navbar.style.display = 'block';
+            
+            if (token) {
+                // User is authenticated - show auth links
+                if (authLinks) authLinks.style.display = 'flex';
+                if (guestLinks) guestLinks.style.display = 'none';
 
-            if (logoutBtn) {
-                logoutBtn.style.display = 'flex';
-
-                logoutBtn.addEventListener('click', () => {
-                    // Clear all auth data
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('latestRoadmap');
-                    
-                    // Use replace to prevent going back to cached pages
-                    window.location.replace('/login/');
-                });
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', () => {
+                        // Clear all auth data
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('latestRoadmap');
+                        
+                        // Use replace to prevent going back to cached pages
+                        window.location.replace('/login/');
+                    });
+                }
+            } else {
+                // User is guest - show guest links
+                if (authLinks) authLinks.style.display = 'none';
+                if (guestLinks) guestLinks.style.display = 'flex';
             }
         } else {
-            // Hide navbar on public pages or when not authenticated
+            // Hide navbar on login/register pages
             if (navbar) {
                 navbar.style.display = 'none';
             }
